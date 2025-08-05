@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "covalent-base"
+version = "0.1"
+description = "Covalent Base by Reforge Robotics"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+  { name="Nosa Edoimioya", email="nosa@reforgerobotics.com" }
+]
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
