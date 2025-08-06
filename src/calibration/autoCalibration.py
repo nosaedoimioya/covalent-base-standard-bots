@@ -129,6 +129,8 @@ def main():
         sysIdParams = SystemIdParams(nV=args.num_angles, 
                                      nR=args.num_radii)
         
+        Ts = 1.0 / args.samp_freq  # sampling time in seconds
+        
         num_joints = robot_interface.robot.num_joints
 
         # Decide how many axes to command
@@ -139,6 +141,11 @@ def main():
             num_axes = (DEFAULT_TASK_NUM_AXES
                         if args.ctrl_config == 'task'
                         else num_joints)
+            
+        robot_interface.robot.move_home(home_sign=args.home_sign)
+
+        # Command trajectory
+        robot_interface.robot.command_robot(tParams, sysIdParams, Ts, num_axes, start_pose=args.start_pose)
         
     except Exception as e:
         # Print exception error message

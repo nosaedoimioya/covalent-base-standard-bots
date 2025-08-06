@@ -1,5 +1,12 @@
-# util/Utility.py
+# src/util/Utility.py
 # This module provides utility objects and functions for other scripts.
+
+# Data Structures
+class MotionProfile:
+    def __init__(self, t, q, endIndex):
+        self.t = t
+        self.q = q
+        self.endIndex = endIndex
 
 class TrajParams:
     def __init__(self, configuration, max_displacement, 

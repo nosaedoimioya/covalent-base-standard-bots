@@ -1,4 +1,4 @@
-# util/RobotInterface.py
+# src/util/RobotInterface.py
 # This module provides an interface to create and manage different types of robots.
 
 from robots.TestRobot import TestRobot
@@ -13,8 +13,3 @@ class RobotInterface:
         # add more robot types as needed
         else:
             raise ValueError(f"Unknown robot type '{robot_name}'. Please use a valid robot name.")
-
-
-
-# Example usage
-# interface = RobotInterface("flexiv", "192.168.1.1", "192.168.1.2")
