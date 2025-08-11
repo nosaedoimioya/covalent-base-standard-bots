@@ -4,7 +4,9 @@
 from typing import List
 from util.Utility import DataRecorder
 from util.Robot import Robot, TrajParams, SystemIdParams, Trajectory
+from util.RobotDynamics import Dynamics
 
+URDF_PATH = "urdf/test_robot.urdf"
 class TestRobot(Robot):
     def __init__(self, robot_ip: str, local_ip: str):
         super().__init__("Test Robot")
@@ -16,10 +18,38 @@ class TestRobot(Robot):
         self.robot_info = {}
         self.num_joints = 6
         self.pose_length = 7
+
+        # Set the URDF path for the robot
+        self._urdf_path = URDF_PATH
+        self.model_is_loaded = False
+
+        # Check if robot is in simulation mode
+        self._in_sim_mode = (robot_ip == "sim")
+
+        # Load robot model from URDF
+        if not self.model_is_loaded:
+            self.initialize_model_from_urdf(self._urdf_path)
         
         # Print ip addresses
         print(f"Robot IP Address: {robot_ip}")
         print(f"Local IP address: {local_ip}")
+
+    @property
+    def in_sim_mode(self) -> bool:
+        return self._in_sim_mode
+    
+    @property
+    def urdf_path(self) -> str:
+        return self._urdf_path
+    
+    def initialize_model_from_urdf(self):
+        print(f"Loading robot model from URDF path: {self.urdf_path}")
+
+        # Load the robot model from the URDF file
+        self.model = Dynamics(urdf_file=self.urdf_path, initialize=True) 
+        self.model_is_loaded = True
+        
+        print("Robot model loaded successfully.")
 
     def move_home(self, home_sign: int = 1):
         print(f"Moving Test Robot to home position with sign {home_sign}.")

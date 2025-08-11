@@ -22,6 +22,23 @@ class Robot(ABC):
         # default [x, y, z, qx, qy, qz, qw]
         self.pose_length = 7 
 
+    @property
+    @abstractmethod
+    def in_sim_mode(self) -> bool:
+        """Check if the robot is in simulation mode."""
+        pass
+
+    @property
+    @abstractmethod
+    def urdf_path(self) -> str:
+        """URDF path for the robot."""
+        pass
+
+    @abstractmethod
+    def initialize_model_from_urdf(self, urdf_path: str):
+        """Load the robot kinematic and dynamic model from a URDF file."""
+        pass
+
     @abstractmethod
     def move_home(self, home_sign: int = 1):
         pass
