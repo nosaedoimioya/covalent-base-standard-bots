@@ -469,14 +469,11 @@ class CalibrationMap:
         # (2) Subtract the gravity vector from the resulting rotated acceleration vector. Gravity 
         #     is assumed to be in the negative z-direction in the universal frame.
 
-        # Update model to get all the kinematics and dynamics updated
-        robot_model.update_model(joint_angles=init_joint_angles)
-
-        rotation_matrix = robot_model.R_total
+        rotation_matrix = robot_model.get_rotation_matrix(joint_angles=init_joint_angles)
         # Position of vector of end-effector in the commanded joint frame
         T_Ej = np.eye(4)
         for k in range(axis_commanded,num_joints):
-            T_Ej = T_Ej @ robot_model.T[k]
+            T_Ej = T_Ej @ robot_model.get_individual_transformation_matrix(i=k, joint_angle=init_joint_angles[k])
         commanded_frame_xyz = T_Ej[0:3,3]
 
         # Project the commanded_frame_xyz vector onto the xy-plane of the rotating joint
@@ -487,7 +484,7 @@ class CalibrationMap:
         # Compute the rotation matrix of the world frame to the commanded to the commanded joint
         R_j0 = np.eye(3)
         for i in range(axis_commanded): # 0 to the commanded axis (commanded axis always >= 1)
-            R_j0 = R_j0 @ robot_model.R[i]
+            R_j0 = R_j0 @ robot_model.get_individual_rotation_matrix(i=i, joint_angle=init_joint_angles[i])
         
         # Axis of joint rotation (relative to world frame - assumes z-axis is defined as rotation axis)
         joint_rotation_axis = R_j0[:,2]

@@ -221,7 +221,7 @@ def rad2deg(radians: float) -> float:
     """
     return np.rad2deg(radians)
 
-def rotation_matrix_to_quaternion(rotation_mat: np.ndarray) -> np.ndarray[float, float, float, float]:
+def rotation_matrix_to_quaternion(rotation_mat: np.ndarray) -> np.ndarray:
     # Check if the input is a 3x3 matrix
     if rotation_mat.shape != (3, 3):
         raise ValueError("Input matrix must be 3x3")

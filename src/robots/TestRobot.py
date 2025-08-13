@@ -1,6 +1,7 @@
 # robots/TestRobot.py
 # This module defines a TestRobot class for testing purposes.
 
+import os
 from typing import List
 from util.Utility import DataRecorder
 from util.Robot import Robot, TrajParams, SystemIdParams, Trajectory
@@ -20,7 +21,12 @@ class TestRobot(Robot):
         self.pose_length = 7
 
         # Set the URDF path for the robot
-        self._urdf_path = URDF_PATH
+        # Initialize URDF location
+        self.module_dir = os.path.dirname(os.path.abspath(__file__))
+        self.rel_path = os.path.join(self.module_dir, URDF_PATH)
+        self._urdf_path = os.path.abspath(self.rel_path)
+        print(f"URDF Path: {self._urdf_path}")
+
         self.model_is_loaded = False
 
         # Check if robot is in simulation mode
@@ -28,7 +34,7 @@ class TestRobot(Robot):
 
         # Load robot model from URDF
         if not self.model_is_loaded:
-            self.initialize_model_from_urdf(self._urdf_path)
+            self.initialize_model_from_urdf()
         
         # Print ip addresses
         print(f"Robot IP Address: {robot_ip}")
@@ -46,9 +52,11 @@ class TestRobot(Robot):
         print(f"Loading robot model from URDF path: {self.urdf_path}")
 
         # Load the robot model from the URDF file
-        self.model = Dynamics(urdf_file=self.urdf_path, initialize=True) 
+        self.model = Dynamics(robot_directory=self.module_dir,
+                              urdf_file=self.urdf_path, 
+                              initialize=True) 
         self.model_is_loaded = True
-        
+
         print("Robot model loaded successfully.")
 
     def move_home(self, home_sign: int = 1):

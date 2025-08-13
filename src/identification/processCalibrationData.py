@@ -2,9 +2,11 @@
 # This script reads calibration data from system identification of a robot arm
 # and processes it for frequency response function (FRF) evaluation.
 
+import os
 import argparse
 import math
 from identification.SineSweepReader import SineSweepReader
+from identification.MapFitterDelete import MapFitter
 
 # Constants
 M_PI                         = math.pi
@@ -102,6 +104,9 @@ def create_parser() -> argparse.ArgumentParser:
     p.add_argument('--max-map-size', dest='max_map_size', type=int,
         default=DEFAULT_MAX_MAP_POSES,
         help=f"Max poses per map (default: {DEFAULT_MAX_MAP_POSES})")
+    p.add_argument('--saved-maps', dest='saved_maps', action='store_true', 
+                default=False,
+                help="If set, will load existing calibration maps instead of generating new ones.")
 
     return p
 
@@ -117,7 +122,7 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser):
     if args.max_map_size > args.poses:
         args.max_map_size = args.poses
 
-def get_calibration_maps(args: argparse.Namespace):
+def generate_calibration_maps(args: argparse.Namespace):
     stored_maps = []
     if args.sysid_type == 'bcb':
         print("Using BCB system identification type.")
@@ -146,8 +151,58 @@ def get_calibration_maps(args: argparse.Namespace):
         # Get calibration maps
         stored_maps = data_reader.get_calibration_maps()
 
-    return stored_maps, args.poses, args.axes, args.num_joints
+    return stored_maps
 
+def load_calibration_maps(args: argparse.Namespace):
+    '''
+        Load existing calibration maps from the specified path.
+        The maps are stored in self.map.
+    '''
+    start_pose = args.start_pose
+    # Process calibration maps in batches
+    # ===========================================
+    # List to store the names of the saved calibration maps
+    stored_calibration_maps = []
+    
+    # Break up the poses into storable map sizes
+    num_runs = args.poses / args.max_map_size
+    precision_tolerance = 1e-6
+    if (num_runs % 1) > precision_tolerance:
+        num_runs = int(num_runs) + 1
+    else:
+        num_runs = int(num_runs)
+
+    for turns in range(num_runs):
+        last_pose = (turns+1) * args.max_map_size if args.max_map_size > 0 else args.poses
+
+        # Raise an error if the start pose is larger than the last pose
+        if start_pose >= last_pose:
+            if start_pose < args.poses:
+                continue
+            ValueError(f"Start pose, {start_pose}, cannot be larger than the last pose, {last_pose}")
+
+        pickle_file = args.data_path + f'/{args.robot_name}_robot_calibration_map_lastPose{last_pose}_numAxes{args.axes}_startPose{start_pose}.pkl'
+
+        # Check if the file exists
+        if not os.path.exists(pickle_file):
+            raise Exception(f"Calibration map file {pickle_file} doesn't exist. \
+                            Remove the --saved-maps flag to generate new maps.")
+        else:
+            stored_calibration_maps.append(pickle_file)
+
+            # Update the start pose
+            start_pose = int(last_pose)
+
+    return stored_calibration_maps
+
+def get_model_directory(args: argparse.Namespace) -> str:
+    
+    model_file_prefix = f"../calibration/models/" + args.data_path.split('/')[-1]
+
+    # Location to save data
+    directory_name = model_file_prefix + f'/{args.robot_name}_robot_predictor_{args.ctrl_config}_numAxes{args.axes}'
+
+    return directory_name        
 
 def main():
     parser = create_parser()
@@ -155,15 +210,33 @@ def main():
     validate_args(args, parser)
 
     print_description()
-    calibration_map_names, num_poses, num_axes, num_joints = get_calibration_maps(args)
+    if args.saved_maps:
+        print("Loading existing calibration maps...")
+        stored_map_names = load_calibration_maps(args)
+        print(f"Loaded {len(stored_map_names)} calibration map(s).")
+    else:
+        print("Generating new calibration maps...")
+        stored_map_names = generate_calibration_maps(args)
 
     # print(f"Loading from:     {prefix}")
-    print(f"Poses:            {num_poses}")
-    print(f"Axes:             {num_axes}")
-    print(f"Joints on robot:  {num_joints}")
+    print(f"Poses:            {args.poses}")
+    print(f"Axes commanded:   {args.axes}")
+    print(f"Joints on robot:  {args.num_joints}")
 
-    # Fitting and processing the calibration maps
-    # … further processing …
+    # Generate neural network fits
+    # ====================================
+    map_fitter = MapFitter(map_names=stored_map_names,
+                           num_positions=args.poses,
+                           axes_commanded=args.axes,
+                           num_joints=args.num_joints)
+    
+    map_fitter.visualize_data()
+    # map_fitter.fit_shaper_neural_network_twohead()
+
+    # # Save fitted models
+    # directory = get_model_directory(args)
+    # map_fitter.save_models(directory=directory)
+    
 
 if __name__ == "__main__":
     main()

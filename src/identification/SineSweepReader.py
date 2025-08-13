@@ -69,9 +69,6 @@ class SineSweepReader:
             sysid_type='sine',
             single_pt_run_time=self.dwell
         )
-        
-        # Initialize robot model
-        self.robot_interface.robot.initialize_model_from_urdf()
 
         num_runs = self.compute_num_maps()
 
@@ -91,7 +88,7 @@ class SineSweepReader:
                                              numJoints=self.num_joints)
             # Pickle file name for storing the map
             pickle_file = self.data_folder + \
-                f'/{self.robot_name}_calibration_map_lastPose{last_pose}_numAxes{self.num_axes}_startPose{start_pose}.pkl'
+                f'/{self.robot_name}_robot_calibration_map_lastPose{last_pose}_numAxes{self.num_axes}_startPose{start_pose}.pkl'
             
             # Loop through each pose and axis
             # ==========================================================
@@ -107,7 +104,7 @@ class SineSweepReader:
                                                        gravity_comp=True,
                                                        shift_store_position=run_index-start_pose)
             # Store the calibration map to a file
-            calibration_map.save_map(pickle_file=pickle_file)
+            calibration_map.save_map(filename=pickle_file)
 
             # Delete map to free RAM
             del calibration_map
@@ -186,7 +183,8 @@ class SineSweepReader:
             time_in.append(time)
 
             v, r, _, _ = self.extract_static_variables(pose=pose_index,
-                                                       axis=commanded_axis)
+                                                       axis=commanded_axis,
+                                                       num_joints=self.num_joints)
             
             # Correlation with the input and the sine waves to identify the beginning 
             # and end-points for each frequency
@@ -266,8 +264,7 @@ class SineSweepReader:
         dynamic_file  = self.data_folder + f'/robotData_motion_pose{pose}_axis{axis}.{self.data_format}'
 
         if not os.path.exists(dynamic_file):
-            print(f"Robot dynamic data file ({dynamic_file}) does not exist.")
-            return None, None, None, None, None, None, None, None, None
+            raise Exception(f"Robot dynamic data file ({dynamic_file}) does not exist.")
         
         # Load the data from the file
         data, _ = load_data_file(fileformat=self.data_format, filename=dynamic_file)

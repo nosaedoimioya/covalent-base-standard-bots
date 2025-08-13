@@ -25,8 +25,6 @@
   <material name="wrist_3_link_color">
     <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
   </material>
-  <!-- create link fixed to the "world" -->
-  <link name="world"/>
   <!-- LINKS -->
   <!-- base link -->
   <link name="base_link">
@@ -175,25 +173,9 @@
       </geometry>
     </collision>
   </link>
-  <!-- All-zero tool frame. This frame should correspond to the TOOL frame of the robot's controller.) -->
-  <link name="tool0"/>
-  <!-- tool link -->
-  <!-- START Delete if not needed -->
-  <!-- Standard frames for industrial robots. Also useful for manipulators.
-         (ROS-I specs - https://wiki.ros.org/Industrial/Tutorials/WorkingWithRosIndustrialRobotSupportPackages#Standardised_links_.2F_frames)-->
-  <!-- This frame should correspond to the BASE coordinate system of robot's controller.) -->
-  <link name="base"/>
-  <!-- Frame for mounting EEF models to a manipulator. x+ axis points forward (REP 103). -->
-  <link name="flange"/>
-  <!-- END Delete if not needed  -->
   <!-- END LINKS -->
+
   <!-- JOINTS -->
-  <!-- base_joint fixes base_link to the environment -->
-  <joint name="base_joint" type="fixed">
-    <origin rpy="0 0 -1.5707963267948966" xyz="0 0 0"/>
-    <parent link="world"/>
-    <child link="base_link"/>
-  </joint>
   <!-- joint 0 -->
   <joint name="joint0" type="revolute">
     <origin rpy="0 0 0" xyz="0 0 0.172"/>
@@ -242,173 +224,5 @@
     <axis xyz="-1 0 0"/>
     <limit effort="63" lower="-6.283185307179586" upper="6.283185307179586" velocity="6.806784082777885"/>
   </joint>
-  <!-- tool frame - fixed frame -->
-  <joint name="joint5-tool0" type="fixed">
-    <parent link="wrist_3_link"/>
-    <child link="tool0"/>
-    <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0"/>
-  </joint>
   <!-- END JOINTS -->
-  <!-- START Delete if not needed -->
-  <!-- Standard frames for industrial robots. Also useful for manipulators.
-         (ROS-I specs - https://wiki.ros.org/Industrial/Tutorials/WorkingWithRosIndustrialRobotSupportPackages#Standardised_links_.2F_frames)-->
-  <joint name="base_link-base_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-    <parent link="base_link"/>
-    <child link="base"/>
-  </joint>
-  <joint name="tool0-flange_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-    <parent link="tool0"/>
-    <child link="flange"/>
-  </joint>
-  <!-- END Delete if not needed  -->
-  <ros2_control name="sbot" type="system">
-    <hardware>
-      <plugin>standard_bots_hardware_interface/SbotHW</plugin>
-      <!-- for SbotHW, temporarily hard-code speed scaling like this. Change later. -->
-      <param name="initial_speed_scaling_factor">1.0</param>
-    </hardware>
-    <joint name="joint0">
-      <command_interface name="position">
-        <!-- Add/Remove interfaces as needed -->
-        <param name="min">-6.28</param>
-        <param name="max">6.28</param>
-      </command_interface>
-      <command_interface name="velocity"/>
-      <!-- Add/Remove interfaces as needed -->
-      <command_interface name="acceleration"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="acceleration"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="joint1">
-      <command_interface name="position">
-        <!-- Add/Remove interfaces as needed -->
-        <param name="min">-2.35</param>
-        <param name="max">2.35</param>
-      </command_interface>
-      <command_interface name="velocity"/>
-      <!-- Add/Remove interfaces as needed -->
-      <command_interface name="acceleration"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="acceleration"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="joint2">
-      <command_interface name="position">
-        <!-- Add/Remove interfaces as needed -->
-        <param name="min">-3.14</param>
-        <param name="max">3.14</param>
-      </command_interface>
-      <command_interface name="velocity"/>
-      <!-- Add/Remove interfaces as needed -->
-      <command_interface name="acceleration"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="acceleration"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="joint3">
-      <command_interface name="position">
-        <!-- Add/Remove interfaces as needed -->
-        <param name="min">-6.28</param>
-        <param name="max">6.28</param>
-      </command_interface>
-      <command_interface name="velocity"/>
-      <!-- Add/Remove interfaces as needed -->
-      <command_interface name="acceleration"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="acceleration"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="joint4">
-      <command_interface name="position">
-        <!-- Add/Remove interfaces as needed -->
-        <param name="min">-6.28</param>
-        <param name="max">6.28</param>
-      </command_interface>
-      <command_interface name="velocity"/>
-      <!-- Add/Remove interfaces as needed -->
-      <command_interface name="acceleration"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="acceleration"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="joint5">
-      <command_interface name="position">
-        <!-- Add/Remove interfaces as needed -->
-        <param name="min">-6.28</param>
-        <param name="max">6.28</param>
-      </command_interface>
-      <command_interface name="velocity"/>
-      <!-- Add/Remove interfaces as needed -->
-      <command_interface name="acceleration"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="acceleration"/>
-      <state_interface name="effort"/>
-    </joint>
-    <sensor name="tcp_fts_sensor">
-      <!-- Remove/change sensors as needed -->
-      <state_interface name="force.x"/>
-      <state_interface name="force.y"/>
-      <state_interface name="force.z"/>
-      <state_interface name="torque.x"/>
-      <state_interface name="torque.y"/>
-      <state_interface name="torque.z"/>
-      <param name="frame_id">tool0</param>
-      <!-- Change sensors as needed -->
-      <param name="min_fx">-100</param>
-      <param name="max_fx">100</param>
-      <param name="min_fy">-100</param>
-      <param name="max_fy">100</param>
-      <param name="min_fz">-200</param>
-      <param name="max_fz">200</param>
-      <param name="min_tx">-10</param>
-      <param name="max_tx">10</param>
-      <param name="min_ty">-10</param>
-      <param name="max_ty">10</param>
-      <param name="min_tz">-15</param>
-      <param name="max_tz">15</param>
-    </sensor>
-  </ros2_control>
-  <link name="scene_environment">
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.13125"/>
-      <geometry>
-        <box size="2.0 2.0 0.25"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 -0.13125"/>
-      <geometry>
-        <box size="2.0 2.0 0.25"/>
-      </geometry>
-      <material name="blue">
-        <color rgba="0 0 1 0.1"/>
-      </material>
-    </visual>
-  </link>
-  <joint name="base_to_scene" type="fixed">
-    <parent link="base_link"/>
-    <child link="scene_environment"/>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-  </joint>
 </robot>
