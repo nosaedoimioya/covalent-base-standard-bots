@@ -7,7 +7,7 @@ import sympy as sym
 import pickle
 
 from typing import List
-from urdf_to_dh.generate_dh import GenerateDhParams
+from util.urdf_to_dh.generate_dh import GenerateDhParams
 
 from util.Utility import deg2rad, rotation_matrix_to_quaternion
 class Dynamics():

@@ -230,12 +230,12 @@ def main():
                            axes_commanded=args.axes,
                            num_joints=args.num_joints)
     
-    map_fitter.visualize_data()
-    # map_fitter.fit_shaper_neural_network_twohead()
+    # map_fitter.visualize_data()
+    map_fitter.fit_shaper_neural_network_twohead()
 
-    # # Save fitted models
-    # directory = get_model_directory(args)
-    # map_fitter.save_models(directory=directory)
+    # Save fitted models
+    directory = get_model_directory(args)
+    map_fitter.save_models(directory=directory)
     
 
 if __name__ == "__main__":

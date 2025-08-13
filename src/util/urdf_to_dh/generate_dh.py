@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 import math
 
-import urdf_to_dh.kinematics_helpers as kh
-import urdf_to_dh.geometry_helpers as gh
-import urdf_to_dh.urdf_helpers as uh
+import util.urdf_to_dh.kinematics_helpers as kh
+import util.urdf_to_dh.geometry_helpers as gh
+import util.urdf_to_dh.urdf_helpers as uh
 
 class GenerateDhParams():
     def __init__(self, urdf_file: str):

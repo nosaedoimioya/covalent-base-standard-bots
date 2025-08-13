@@ -1,4 +1,4 @@
-# src/identification/MapGenerationDelete.py
+# src/identification/MapGeneration.py
 # This module is responsible for generating calibration maps.
 
 # DELETE THIS FILE and use the C++ binding instead.
