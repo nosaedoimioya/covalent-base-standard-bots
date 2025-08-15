@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core", "pybind11", "setuptools>=61.0", "wheel"]
+build-backend = "scikit_build_core.build"
 
 [project]
 name = "covalent-base"
@@ -13,5 +13,8 @@ authors = [
 ]
 dependencies = []
 
-[tool.setuptools.packages.find]
+[tool.scikit-build]
+wheel.packages = ["src"]
+
+[tool.scikit-build.packages.find]
 where = ["src"]

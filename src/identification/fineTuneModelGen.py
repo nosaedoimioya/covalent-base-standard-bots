@@ -2,7 +2,7 @@
 import argparse
 from typing import List
 
-from identification.MapGeneration import CalibrationMap
+from src.identification.MapGenerationDelete import CalibrationMap
 from identification.MapFitterDelete import MapFitter, ModelLoader
 
 def _infer_dims(map_files: List[str]):
