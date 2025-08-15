@@ -16,5 +16,11 @@ dependencies = []
 [tool.scikit-build]
 wheel.packages = ["src"]
 
+[tool.setuptools.extension-module]
+"identification._sinesweepreader" = {sources = ["src/identification/_sinesweepreader.cpp"], include-dirs=["cpp"]}
+
 [tool.scikit-build.packages.find]
+where = ["src"]
+
+[tool.setuptools.packages.find]
 where = ["src"]
