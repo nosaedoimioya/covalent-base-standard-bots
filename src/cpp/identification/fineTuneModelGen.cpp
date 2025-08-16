@@ -1,4 +1,4 @@
-#include "fineTuneModelGen.hpp"
+#include "FineTuneModelGen.hpp"
 //
 // This file implements a minimal example of the fine tuning pipeline.  The
 // real project performs neural network optimisation here; the current code
@@ -77,8 +77,8 @@ int runFineTuneModelGen(const std::string &model_file,
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(fineTuneModelGen, m) {
-    m.doc() = "C++ bindings for fineTuneModelGen";
+PYBIND11_MODULE(FineTuneModelGen, m) {
+    m.doc() = "C++ bindings for FineTuneModelGen";
     m.def("runFineTuneModelGen", &runFineTuneModelGen,
           py::arg("model_file"),
           py::arg("maps"),

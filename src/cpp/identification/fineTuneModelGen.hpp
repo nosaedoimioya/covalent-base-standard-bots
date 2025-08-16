@@ -3,8 +3,8 @@
 #include <vector>
 
 /**
- * @file fineTuneModelGen.hpp
- * @brief Interfaces for fine-tuning saved shaper neural network models
+ * @file FineTuneModelGen.hpp
+ * @brief Interfaces for Fine-tuning saved shaper neural network models
  */
 
 /**

@@ -4,7 +4,7 @@
 #include <string>
 
 /**
- * @file processCalibrationData.hpp
+ * @file ProcessCalibrationData.hpp
  * @brief Interfaces for converting raw identification data into calibration maps.
  */
 

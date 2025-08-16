@@ -1,8 +1,8 @@
 import pathlib
 import pytest
 
-pytest.importorskip("identification.processCalibrationData")
-from identification import processCalibrationData
+pytest.importorskip("identification.ProcessCalibrationData")
+from identification.ProcessCalibrationData import processCalibrationData
 
 
 def test_process_calibration_data_saved_maps():
