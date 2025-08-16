@@ -42,7 +42,7 @@ install(
         MapFitter.hpp
         MapGeneration.hpp
         SineSweepReader.hpp
-        processCalibrationData.hpp
-        fineTuneModelGen.hpp
+        ProcessCalibrationData.hpp
+        FineTuneModelGen.hpp
     DESTINATION include/identification
 )
