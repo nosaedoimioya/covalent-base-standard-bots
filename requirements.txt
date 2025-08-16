@@ -8,3 +8,4 @@ scipy==1.16.1
 sympy==1.14.0
 tensorflow==2.20.0
 pybind11==2.13.1
+pytest==8.2.2
