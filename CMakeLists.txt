@@ -12,5 +12,7 @@ endif()
 find_package(Eigen3 QUIET)
 find_package(FFTW3 QUIET)
 find_package(Torch QUIET)
+find_package(cnpy QUIET)
+find_package(Iir QUIET)
 
 add_subdirectory(src/cpp/identification)
