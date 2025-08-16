@@ -1,4 +1,5 @@
 from .MapGeneration import CalibrationMap
+from .MapFitter import MapFitter
 
 """Identification utilities.
 
@@ -33,5 +34,6 @@ __all__ = [
     "SineSweepReader",
     "PySineSweepReader",
     "CalibrationMap",
+    "MapFitter",
     "processCalibrationData",
 ]
