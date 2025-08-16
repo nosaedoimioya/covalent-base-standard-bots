@@ -1,4 +1,4 @@
-#include "processCalibrationData.hpp"
+#include "ProcessCalibrationData.hpp"
 #include "MapFitter.hpp"
 #include "SineSweepReader.hpp"
 #include "CLI11.hpp"
@@ -132,8 +132,8 @@ int processCalibrationDataCLI(int argc, const char **argv) {
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(processCalibrationData, m) {
-    m.doc() = "C++ bindings for processing calibration data";
+PYBIND11_MODULE(ProcessCalibrationData, m) {
+    m.doc() = "C++ bindings for ProcessCalibrationData";
     m.def(
         "processCalibrationData",
         [](const std::string &data_path, int poses, int axes,
