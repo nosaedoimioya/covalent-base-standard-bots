@@ -10,8 +10,8 @@ if(FFTW3_FOUND)
 endif()
 
 if(pybind11_FOUND)
-    pybind11_add_module(MapFitterDelete MODULE MapFitterDelete.cpp)
-    target_link_libraries(MapFitterDelete PRIVATE ${IDENTIFICATION_DEPS})
+    pybind11_add_module(MapFitter MODULE MapFitter.cpp)
+    target_link_libraries(MapFitter PRIVATE ${IDENTIFICATION_DEPS})
 
     pybind11_add_module(MapGeneration MODULE MapGeneration.cpp)
     target_link_libraries(MapGeneration PRIVATE ${IDENTIFICATION_DEPS})

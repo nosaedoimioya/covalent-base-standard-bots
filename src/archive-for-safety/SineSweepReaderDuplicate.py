@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from util.Utility import TrajParams, StructuredCalibrationData, load_data_file
 from util.RobotInterface import RobotInterface
-from src.identification.MapGenerationDelete import CalibrationMap
+from src.identification.MapGenerationDuplicate import CalibrationMap
 
 # Constants
 GRAVITY_ACC                  = 9.81    # [m/s^2]

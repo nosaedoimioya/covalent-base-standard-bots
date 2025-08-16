@@ -2,8 +2,8 @@
 import argparse
 from typing import List
 
-from src.identification.MapGenerationDelete import CalibrationMap
-from identification.MapFitterDelete import MapFitter, ModelLoader
+from src.identification.MapGenerationDuplicate import CalibrationMap
+from src.identification.MapFitterDuplicate import MapFitter, ModelLoader
 
 def _infer_dims(map_files: List[str]):
     dummy = CalibrationMap(numPositions=1, axesCommanded=1, numJoints=1)
