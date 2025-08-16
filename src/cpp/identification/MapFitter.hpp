@@ -1,18 +1,30 @@
 #ifndef IDENTIFICATION_MAPFITTER_HPP
 #define IDENTIFICATION_MAPFITTER_HPP
 
-#include <torch/torch.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/functional.h>
-#include <string>
-#include <vector>
 #include <memory>
 #include <sstream>
+#include <string>
+#include <vector>
+
+#include <pybind11/functional.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <torch/torch.h>
+
+/**
+ * @file MapFitter.hpp
+ * @brief Neural network utilities for calibration map fitting.
+ */
 
 namespace identification {
 
-// Masked mean square error loss ignoring zero targets
+/**
+ * @brief Compute masked mean squared error, ignoring zero targets.
+ *
+ * @param target    Ground truth tensor where zeros are ignored.
+ * @param prediction Model predictions.
+ * @return Loss tensor representing the masked MSE.
+ */
 inline torch::Tensor masked_mse(const torch::Tensor &target,
                                 const torch::Tensor &prediction) {
     auto mask = target.ne(0.0).to(prediction.dtype());
@@ -21,12 +33,19 @@ inline torch::Tensor masked_mse(const torch::Tensor &target,
     return mse;
 }
 
-// Simple two head network used for fitting the calibration map
+/**
+ * @brief Simple two head network used for fitting calibration maps.
+ */
 struct ShaperNetImpl : torch::nn::Module {
     torch::nn::Sequential body{nullptr};
     torch::nn::Linear order_head{nullptr};
     torch::nn::Linear mode_head{nullptr};
-
+    
+    /**
+     * @brief Construct the neural network.
+     * @param in_features Number of input features.
+     * @param hidden      Sizes of hidden layers.
+     */
     ShaperNetImpl(int in_features, std::vector<int> hidden) {
         body = register_module("body", torch::nn::Sequential());
         int last = in_features;
@@ -39,6 +58,11 @@ struct ShaperNetImpl : torch::nn::Module {
         mode_head  = register_module("modes", torch::nn::Linear(last, 4));
     }
 
+    /**
+     * @brief Forward pass producing order and modes.
+     * @param x Input feature tensor.
+     * @return Pair of tensors containing classification order and mode outputs.
+     */
     std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor x) {
         x = body->forward(x);
         auto order = torch::sigmoid(order_head->forward(x));
@@ -48,9 +72,17 @@ struct ShaperNetImpl : torch::nn::Module {
 };
 TORCH_MODULE(ShaperNet);
 
-// MapFitter drives training/inference for each joint axis
+/**
+ * @brief Driver for training and inference of per-axis models.
+ */
 class MapFitter {
 public:
+    /**
+     * @brief Construct a MapFitter with the given model topology.
+     * @param axes Number of joint axes.
+     * @param input_features Number of features per sample.
+     * @param hidden Hidden layer sizes for each model.
+     */
     MapFitter(int axes, int input_features, std::vector<int> hidden)
         : axes_(axes), in_features_(input_features), hidden_(std::move(hidden)) {
         for (int i = 0; i < axes_; ++i) {
@@ -58,6 +90,16 @@ public:
         }
     }
 
+    /**
+     * @brief Train models for each axis.
+     *
+     * @param features Input feature tensors per axis.
+     * @param modes    Target mode tensors per axis.
+     * @param orders   Classification targets per axis.
+     * @param masks    Masks indicating valid elements in mode tensors.
+     * @param epochs   Training epochs.
+     * @param lr       Learning rate.
+     */
     void train(const std::vector<torch::Tensor> &features,
                const std::vector<torch::Tensor> &modes,
                const std::vector<torch::Tensor> &orders,
@@ -81,6 +123,12 @@ public:
         }
     }
 
+    /**
+     * @brief Run inference for a given axis.
+     * @param axis    Axis index.
+     * @param feature Input feature tensor.
+     * @return Pair of tensors containing predicted order and modes.
+     */
     std::pair<torch::Tensor, torch::Tensor> infer(int axis,
                                                   const torch::Tensor &feature) {
         auto model = models_.at(axis);
@@ -88,6 +136,10 @@ public:
         return model->forward(feature);
     }
 
+    /**
+     * @brief Persist trained models to disk.
+     * @param directory Destination directory.
+     */
     void save_models(const std::string &directory) const {
         for (size_t i = 0; i < models_.size(); ++i) {
             std::ostringstream fn;
@@ -96,6 +148,10 @@ public:
         }
     }
 
+    /**
+     * @brief Load previously saved models from disk.
+     * @param directory Source directory containing model files.
+     */
     void load_models(const std::string &directory) {
         for (size_t i = 0; i < models_.size(); ++i) {
             std::ostringstream fn;
@@ -111,9 +167,19 @@ private:
     std::vector<std::shared_ptr<ShaperNet>> models_;
 };
 
-// Helper that mirrors the Python load_models/save_models workflow
+/**
+ * @brief Helper to load/save models.
+ */
 class ModelLoader {
 public:
+    /**
+     * @brief Load models from disk and construct a MapFitter.
+     * @param directory Directory containing saved models.
+     * @param axes      Number of axes.
+     * @param input_features Number of input features.
+     * @param hidden    Hidden layer sizes.
+     * @return Shared pointer to a MapFitter with loaded weights.
+     */
     static std::shared_ptr<MapFitter> load(const std::string &directory,
                                            int axes,
                                            int input_features,

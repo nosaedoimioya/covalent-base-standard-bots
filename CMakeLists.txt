@@ -5,9 +5,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Dependencies
-find_package(pybind11 REQUIRED)
+find_package(pybind11 QUIET)
+if(NOT pybind11_FOUND)
+  message(STATUS "pybind11 not found; Python modules will not be built")
+endif()
 find_package(Eigen3 QUIET)
 find_package(FFTW3 QUIET)
 find_package(Torch QUIET)
 
-add_subdirectory(cpp/identification)
+add_subdirectory(src/cpp/identification)

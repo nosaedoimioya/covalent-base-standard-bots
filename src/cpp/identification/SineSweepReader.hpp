@@ -1,23 +1,47 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <unordered_map>
+
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <string>
+#include <vector>
+#include <unordered_map>
 
 #include <Eigen/Dense>
 #include "cnpy.h"
 
-// SineSweepReader
-// ---------------
-// Lightweight C++ port of the Python SineSweepReader used for processing
-// identification data.  The class focuses on file parsing and exposes
-// utilities required by higher level routines.
+/**
+ * @file SineSweepReader.hpp
+ * @brief Lightweight C++ port of the Python SineSweepReader used for
+ *        processing identification data.
+ */
 
+/**
+ * @brief Parses sine sweep identification data and exposes helper utilities.
+ */
 class SineSweepReader {
 public:
+    /**
+     * @brief Construct a reader for sine sweep datasets.
+     * @param data_folder   Root directory of the data.
+     * @param num_poses     Number of pose samples.
+     * @param num_axes      Number of commanded axes.
+     * @param robot_name    Name of the robot.
+     * @param data_format   Input data format (csv, npy, npz).
+     * @param num_joints    Number of robot joints.
+     * @param min_freq      Minimum excitation frequency.
+     * @param max_freq      Maximum excitation frequency.
+     * @param freq_space    Frequency spacing.
+     * @param max_disp      Maximum displacement.
+     * @param dwell         Dwell time between sweeps.
+     * @param Ts            Sample period.
+     * @param ctrl_config   Control configuration identifier.
+     * @param max_acc       Maximum acceleration.
+     * @param max_vel       Maximum velocity.
+     * @param sine_cycles   Number of sine cycles.
+     * @param max_map_size  Maximum number of maps to retain.
+     */
     SineSweepReader(const std::string& data_folder,
                     std::size_t num_poses,
                     std::size_t num_axes,
@@ -53,14 +77,24 @@ public:
           sine_cycles_(sine_cycles),
           max_map_size_(max_map_size) {}
 
-    // Returns the paths of generated calibration maps.  Real implementations
-    // would perform the heavy lifting; for now this merely returns any
-    // previously stored results.
+    /**
+     * @brief Retrieve paths of generated calibration maps.
+     * @return Vector of map file paths.
+     */
     std::vector<std::string> get_calibration_maps() const { return calibration_maps_; }
-
+    
+    /**
+     * @brief Clear any stored calibration map paths.
+     */
     void reset_calibration_maps() { calibration_maps_.clear(); }
 
     // Helper routines for reading common data formats ----------------------
+
+    /**
+     * @brief Load a CSV file into an Eigen matrix.
+     * @param filename Path to the CSV file.
+     * @return Parsed matrix.
+     */
     Eigen::MatrixXd load_csv(const std::string& filename) const {
         std::ifstream file(filename);
         if (!file.is_open()) {
@@ -87,6 +121,11 @@ public:
         return result;
     }
 
+    /**
+     * @brief Load an NPZ archive into a map of Eigen matrices.
+     * @param filename Path to the NPZ file.
+     * @return Mapping from array names to matrices.
+     */
     std::unordered_map<std::string, Eigen::MatrixXd>
     load_npz(const std::string& filename) const {
         cnpy::npz_t npz = cnpy::npz_load(filename);
@@ -109,6 +148,11 @@ public:
         return data;
     }
 
+    /**
+     * @brief Load a NumPy NPY array file.
+     * @param filename Path to the NPY file.
+     * @return Parsed matrix.
+     */
     Eigen::MatrixXd load_npy(const std::string& filename) const {
         cnpy::NpyArray arr = cnpy::npy_load(filename);
         const double* raw = arr.data<double>();
