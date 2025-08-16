@@ -12,19 +12,9 @@ and use the C++ extension instead.
 
 from __future__ import annotations
 
-from typing import Any
+try:  # pragma: no cover - extension may not be built
+    from .SineSweepReader import SineSweepReader  # type: ignore
+except Exception as exc:  # pragma: no cover - extension may not be built
+    raise ImportError("SineSweepReader extension not built") from exc
 
-
-class SineSweepReader:  # pragma: no cover - placeholder implementation
-    """Stub for the legacy Python ``SineSweepReader``.
-
-    The C++ extension :mod:`identification._sinesweepreader` supersedes this
-    class.  Users should install and use the extension instead.
-    """
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        raise NotImplementedError(
-            "The Python implementation of SineSweepReader has been removed. "
-            "Build the C++ extension `identification._sinesweepreader` for "
-            "full functionality."
-        )
+__all__ = ["SineSweepReader"]
