@@ -30,9 +30,6 @@ if(pybind11_FOUND)
 
     pybind11_add_module(ProcessCalibrationData MODULE ProcessCalibrationData.cpp)
     target_link_libraries(ProcessCalibrationData PRIVATE ${IDENTIFICATION_DEPS})
-
-    pybind11_add_module(IDENTIFICATION_MODULE MODULE IDENTIFICATION_MODULE.cpp)
-    target_link_libraries(IDENTIFICATION_MODULE PRIVATE ${IDENTIFICATION_DEPS})
 else()
     message(STATUS "pybind11 not found; identification Python modules will not be built")
 endif()
