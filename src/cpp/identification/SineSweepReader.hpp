@@ -91,6 +91,27 @@ public:
     // Helper routines for reading common data formats ----------------------
 
     /**
+     * @brief Compute how many calibration maps are required.
+     *
+     * Mirrors the logic of the legacy Python implementation which divides the
+     * total number of poses by the maximum allowed map size and rounds up with a
+     * small tolerance to account for floating point error.
+     */
+    std::size_t compute_num_maps() const;
+
+    /**
+     * @brief Parse a simple delimited text file into numeric rows.
+     *
+     * Each non-empty line is split on commas and converted to ``double``.  The
+     * routine is intentionally lightweight and is used by the tests to validate
+     * data handling parity with the historic Python ``SineSweepReader``.
+     *
+     * @param filename Path to the data file.
+     * @return Parsed matrix stored as a vector of rows.
+     */
+    std::vector<std::vector<double>> parse_data(const std::string& filename) const;
+
+    /**
      * @brief Load a CSV file into an Eigen matrix.
      * @param filename Path to the CSV file.
      * @return Parsed matrix.
@@ -188,4 +209,6 @@ private:
     std::size_t max_map_size_;
 
     std::vector<std::string> calibration_maps_;
+    
+    std::vector<std::string> read_file(const std::string& filename) const;
 };

@@ -19,7 +19,7 @@ if(pybind11_FOUND)
     pybind11_add_module(MapGeneration MODULE MapGeneration.cpp)
     target_link_libraries(MapGeneration PRIVATE ${IDENTIFICATION_DEPS} FFTW3::fftw3)
 
-    pybind11_add_module(SineSweepReader MODULE SineSweepReader.cpp)
+    pybind11_add_module(SineSweepReader MODULE SineSweepReader.cpp SineSweepReaderData.cpp)
     target_link_libraries(SineSweepReader PRIVATE ${IDENTIFICATION_DEPS})
 
     pybind11_add_module(FineTuneModelGen MODULE FineTuneModelGen.cpp)
