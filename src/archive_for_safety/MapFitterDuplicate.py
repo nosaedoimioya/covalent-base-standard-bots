@@ -7,7 +7,7 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 from typing import List
-from src.identification.MapGenerationDuplicate import CalibrationMap
+from src.archive_for_safety.MapGenerationDuplicate import CalibrationMap
 from control import matlab
 import tensorflow as tf
 from tensorflow import keras
