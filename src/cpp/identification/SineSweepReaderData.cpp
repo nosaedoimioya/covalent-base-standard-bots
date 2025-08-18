@@ -1,6 +1,7 @@
 #include "SineSweepReader.hpp"
 
 #include <cmath>
+#include <sstream>
 
 // Implements lightweight utilities that mirror missing pieces from the
 // historical Python implementation.  These routines live in a separate source
@@ -19,6 +20,25 @@ std::size_t SineSweepReader::compute_num_maps() const {
         return whole + 1;
     }
     return whole;
+}
+
+std::vector<std::string> SineSweepReader::get_calibration_maps() {
+    reset_calibration_maps();
+    std::size_t runs = compute_num_maps();
+    for (std::size_t pass = 0; pass < runs; ++pass) {
+        std::size_t last_pose = (pass + 1) * max_map_size_;
+        if (max_map_size_ == 0) {
+            last_pose = num_poses_;
+        }
+        std::size_t start_pose = pass * max_map_size_;
+        std::ostringstream fn;
+        fn << data_folder_ << "/" << robot_name_
+           << "_robot_calibration_map_lastPose" << last_pose
+           << "_numAxes" << num_axes_
+           << "_startPose" << start_pose << ".pkl";
+        calibration_maps_.push_back(fn.str());
+    }
+    return calibration_maps_;
 }
 
 std::vector<std::string> SineSweepReader::read_file(

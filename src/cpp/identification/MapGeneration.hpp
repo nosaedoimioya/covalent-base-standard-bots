@@ -31,6 +31,21 @@ public:
     CalibrationMap(int numPositions, int axesCommanded, int numJoints);
 
     /**
+     * @brief Number of stored poses in the map.
+     */
+    int num_positions() const { return num_positions_; }
+
+    /**
+     * @brief Number of commanded axes represented in the map.
+     */
+    int axes_commanded() const { return axes_commanded_; }
+
+    /**
+     * @brief Number of joints used to generate the map.
+     */
+    int num_joints() const { return num_joints_; }
+
+    /**
      * @brief Generate a calibration map from robot data.
      *
      * @param robot_input   Input commands to the robot.
@@ -66,6 +81,10 @@ private:
     Eigen::MatrixXd sineSweepDenominators_;
     Eigen::MatrixXd allWn_;
     Eigen::MatrixXd allZeta_;
+
+    int num_positions_;
+    int axes_commanded_;
+    int num_joints_;
 
     // helper routines
     Eigen::VectorXcd computeFFT(const Eigen::VectorXd &data) const;

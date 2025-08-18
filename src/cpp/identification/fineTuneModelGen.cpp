@@ -1,54 +1,30 @@
 #include "FineTuneModelGen.hpp"
-//
-// This file implements a minimal example of the fine tuning pipeline.  The
-// real project performs neural network optimisation here; the current code
-// mirrors the previous dummy implementation so unit tests have something to
-// exercise.
+#include "MapGeneration.hpp"
+#include "MapFitter.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <iostream>
-#include <string>
+#include <tuple>
 #include <vector>
+#include <string>
 
 namespace {
 
-// Placeholder C++ implementations of the required classes. In a production
-// environment these would be provided by the identification library. They are
-// placed in an anonymous namespace to avoid symbol clashes.
-class ModelLoader {
-public:
-    explicit ModelLoader(int num_axes = 0) : num_axes_(num_axes) {}
-
-    void load_models(const std::string &path) {
-        std::cout << "Loading models from " << path << std::endl;
+std::tuple<int, int, int> infer_dims(const std::vector<std::string> &map_files) {
+    int total_poses = 0;
+    int num_axes = 0;
+    int num_joints = 0;
+    for (const auto &file : map_files) {
+        CalibrationMap m = CalibrationMap::load_map(file);
+        total_poses += m.num_positions();
+        if (num_axes == 0) {
+            num_axes = m.axes_commanded();
+            num_joints = m.num_joints();
+        }
     }
-
-    void save_models(const std::string &path) const {
-        std::cout << "Saving models to " << path << std::endl;
-    }
-
-    int num_axes_; // unused placeholder
-};
-
-class MapFitter {
-public:
-    MapFitter(const std::vector<std::string> &map_names,
-              int num_positions,
-              int axes_commanded,
-              int num_joints) {
-        std::cout << "Initializing MapFitter with " << map_names.size()
-                  << " maps" << std::endl;
-    }
-
-    void fine_tune_shaper_neural_network_twohead(ModelLoader &,
-                                                 double lr,
-                                                 int epochs) {
-        std::cout << "Fine tuning with lr=" << lr << " epochs=" << epochs
-                  << std::endl;
-    }
-};
+     return {total_poses, num_axes, num_joints};
+}
 
 } // namespace
 
@@ -57,20 +33,16 @@ int runFineTuneModelGen(const std::string &model_file,
                         int epochs,
                         double lr,
                         const std::string &save_file) {
-    // Dummy inference of dimensions; in a real implementation these would be
-    // extracted from the provided map files.
-    int num_poses = 0;
-    int num_axes = 0;
-    int num_joints = 0;
+    auto [num_poses, num_axes, num_joints] = infer_dims(maps);
 
-    ModelLoader loader(num_axes);
-    loader.load_models(model_file);
+    auto fitter = identification::ModelLoader::load(model_file, num_axes,
+                                                   /*input_features*/3,
+                                                   std::vector<int>{64, 64});
 
-    MapFitter fitter(maps, num_poses, num_axes, num_joints);
-    fitter.fine_tune_shaper_neural_network_twohead(loader, lr, epochs);
-
-    std::string out_file = save_file.empty() ? "fine_tuned_map" : save_file;
-    loader.save_models(out_file);
+    // Placeholder: In a full implementation, data from the maps would be
+    // converted into training tensors and passed to fitter->train(...). The
+    // current version simply reloads and saves the models.
+    fitter->save_models(save_file.empty() ? "fine_tuned_map" : save_file);
 
     return 0;
 }

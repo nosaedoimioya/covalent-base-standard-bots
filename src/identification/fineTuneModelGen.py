@@ -1,25 +1,22 @@
-"""Python wrapper for the C++ fine-tuning executable."""
+"""Command line interface for the FineTuneModelGen C++ binding."""
 
-import pathlib
-import subprocess
-import sys
+from __future__ import annotations
+
+import argparse
 from typing import Optional, Sequence
 
+from .FineTuneModelGen import runFineTuneModelGen
+
 def main(argv: Optional[Sequence[str]] = None) -> None:
-    """Invoke the compiled C++ fine-tuning binary.
-    Parameters
-    ----------
-    argv: Optional[Sequence[str]]
-        Optional list of command line arguments. If ``None`` ``sys.argv[1:]`` is used.
-    """
-    if argv is None:
-        argv = sys.argv[1:]
-    
-    exe = pathlib.Path(__file__).with_name("fine_tune_model_gen")
-    if not exe.is_file():
-        raise FileNotFoundError(f"Compiled binary '{exe}' not found")
-    cmd = [str(exe)] + list(argv)
-    subprocess.run(cmd, check=True)
+    parser = argparse.ArgumentParser(description="Fine-tune saved shaper NN models")
+    parser.add_argument("--model", required=True, help="Location file of existing models")
+    parser.add_argument("maps", nargs="+", help="Calibration map pickle files for new data")
+    parser.add_argument("--epochs", type=int, default=50, help="Training epochs")
+    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
+    parser.add_argument("--save", default="", help="Output file for updated models")
+    args = parser.parse_args(argv)
+
+    runFineTuneModelGen(args.model, args.maps, args.epochs, args.lr, args.save)
 
 if __name__ == "__main__":  # pragma: no cover - manual execution
     main()

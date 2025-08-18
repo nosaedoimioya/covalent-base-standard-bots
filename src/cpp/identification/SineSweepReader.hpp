@@ -81,7 +81,7 @@ public:
      * @brief Retrieve paths of generated calibration maps.
      * @return Vector of map file paths.
      */
-    std::vector<std::string> get_calibration_maps() const { return calibration_maps_; }
+    std::vector<std::string> get_calibration_maps();
     
     /**
      * @brief Clear any stored calibration map paths.
@@ -209,6 +209,6 @@ private:
     std::size_t max_map_size_;
 
     std::vector<std::string> calibration_maps_;
-    
+
     std::vector<std::string> read_file(const std::string& filename) const;
 };

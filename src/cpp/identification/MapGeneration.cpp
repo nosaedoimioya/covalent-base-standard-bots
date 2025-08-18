@@ -8,7 +8,10 @@ CalibrationMap::CalibrationMap(int numPositions, int axesCommanded, int numJoint
     : sineSweepNumerators_(Eigen::MatrixXd::Zero(numPositions, axesCommanded)),
       sineSweepDenominators_(Eigen::MatrixXd::Zero(numPositions, axesCommanded)),
       allWn_(Eigen::MatrixXd::Zero(numPositions, axesCommanded)),
-      allZeta_(Eigen::MatrixXd::Zero(numPositions, axesCommanded)) {}
+      allZeta_(Eigen::MatrixXd::Zero(numPositions, axesCommanded)),
+      num_positions_(numPositions),
+      axes_commanded_(axesCommanded),
+      num_joints_(numJoints) {}
 
 void CalibrationMap::generateCalibrationMap(py::array_t<double> robot_input,
                                             py::array_t<double> robot_output,
@@ -130,6 +133,9 @@ CalibrationMap CalibrationMap::load_map(const std::string &filename) {
 PYBIND11_MODULE(MapGeneration, m) {
     py::class_<CalibrationMap>(m, "CalibrationMap")
         .def(py::init<int,int,int>())
+        .def("num_positions", &CalibrationMap::num_positions)
+        .def("axes_commanded", &CalibrationMap::axes_commanded)
+        .def("num_joints", &CalibrationMap::num_joints)
         .def("generateCalibrationMap", &CalibrationMap::generateCalibrationMap,
              py::arg("robot_input"), py::arg("robot_output"),
              py::arg("input_Ts"), py::arg("output_Ts"),
