@@ -5,8 +5,8 @@
 import os
 import argparse
 import math
-from src.identification.SineSweepReaderDuplicate import SineSweepReader
-from src.identification.MapFitterDuplicate import MapFitter
+from src.archive_for_safety.SineSweepReader import SineSweepReader
+from src.archive_for_safety.MapFitter import MapFitter
 
 # Constants
 M_PI                         = math.pi
