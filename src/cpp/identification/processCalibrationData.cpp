@@ -65,7 +65,7 @@ int processCalibrationData(const ProcessCalibrationOptions &in_opts) {
     return static_cast<int>(stored_maps.size());
 }
 
-int processCalibrationDataCLI(int argc, const char **argv) {
+int processCalibrationDataCLI(int argc, char **argv) {
     ProcessCalibrationOptions opts;
     CLI::App app{"Load sysID sine-sweep data and produce calibration maps"};
     auto &data_opt = app.add_option("data_path", opts.data_path,
@@ -105,8 +105,9 @@ int processCalibrationDataCLI(int argc, const char **argv) {
 
     try {
         app.parse(argc, argv);
-    } catch (const CLI::ParseError &e) {
-        return app.exit(e);
+    } catch (const CLI::Error &e) {
+        std::cerr << e.what() << std::endl;
+        return 1;
     }
 
     return processCalibrationData(opts);
@@ -169,6 +170,15 @@ PYBIND11_MODULE(ProcessCalibrationData, m) {
         py::arg("start_pose") = ProcessCalibrationOptions().start_pose,
         py::arg("max_map_size") = ProcessCalibrationOptions().max_map_size,
         py::arg("saved_maps") = ProcessCalibrationOptions().saved_maps);
-    m.def("processCalibrationDataCLI", &processCalibrationDataCLI,
-          py::arg("argv"));
+    m.def("processCalibrationDataCLI",
+      [](const std::vector<std::string> &args) {
+          std::vector<char*> argv;
+          argv.reserve(args.size());
+          for (auto &s : args) {
+              argv.push_back(const_cast<char*>(s.c_str()));
+          }
+          int argc = static_cast<int>(argv.size());
+          return processCalibrationDataCLI(argc, argv.data());
+      },
+      py::arg("args"));
 }

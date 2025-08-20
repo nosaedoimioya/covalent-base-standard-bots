@@ -9,6 +9,8 @@ public:
     explicit Error(const std::string &msg) : std::runtime_error(msg) {}
 };
 
+using ParseError = Error;
+
 class Option {
 public:
     std::string name;
