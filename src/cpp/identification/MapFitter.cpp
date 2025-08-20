@@ -37,7 +37,7 @@ std::pair<torch::Tensor, torch::Tensor> ShaperNetImpl::forward(torch::Tensor x) 
 MapFitter::MapFitter(int axes, int input_features, std::vector<int> hidden)
     : axes_(axes), in_features_(input_features), hidden_(std::move(hidden)) {
     for (int i = 0; i < axes_; ++i) {
-        models_.push_back(std::make_shared<ShaperNet>(in_features_, hidden_));
+        models_.emplace_back(in_features_, hidden_);
     }
 }
 
@@ -48,7 +48,7 @@ void MapFitter::train(const std::vector<torch::Tensor> &features,
                       int epochs,
                       double lr) {
     for (int axis = 0; axis < axes_; ++axis) {
-        auto model = models_[axis];
+        auto &model = models_[axis];
         model->train();
         torch::optim::Adam optim(model->parameters(), lr);
         auto bce = torch::nn::BCELoss();
@@ -66,7 +66,7 @@ void MapFitter::train(const std::vector<torch::Tensor> &features,
 
 std::pair<torch::Tensor, torch::Tensor> MapFitter::infer(
     int axis, const torch::Tensor &feature) {
-    auto model = models_.at(axis);
+    auto &model = models_[axis];
     model->eval();
     return model->forward(feature);
 }

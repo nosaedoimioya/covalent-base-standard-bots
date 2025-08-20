@@ -103,7 +103,7 @@ private:
     int axes_;
     int in_features_;
     std::vector<int> hidden_;
-    std::vector<std::shared_ptr<ShaperNet>> models_;
+    std::vector<ShaperNet> models_;
 };
 
 /**
