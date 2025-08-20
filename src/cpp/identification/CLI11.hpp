@@ -13,10 +13,12 @@ class Option {
 public:
     std::string name;
     bool required{false};
+    bool seen{false};
     std::vector<std::string> *vec_target{nullptr};
     std::string *str_target{nullptr};
     int *int_target{nullptr};
     double *dbl_target{nullptr};
+    bool *bool_target{nullptr};
 };
 
 class App {
@@ -36,6 +38,9 @@ public:
     Option &add_option(const std::string &name, double &var, const std::string &desc="") {
         Option o; o.name=name; o.dbl_target=&var; opts.push_back(o); return opts.back();
     }
+    Option &add_flag(const std::string &name, bool &var, const std::string &desc="") {
+        Option o; o.name=name; o.bool_target=&var; opts.push_back(o); return opts.back();
+    }
 
     void parse(int argc, char **argv) {
         for (int i=1; i<argc; ++i) {
@@ -47,6 +52,7 @@ public:
                     if (o.name == key) { opt = &o; break; }
                 }
                 if (!opt) throw Error("Unknown option: " + arg);
+                opt->seen = true;
                 if (opt->vec_target) {
                     while (i+1 < argc && std::string(argv[i+1]).rfind("--",0) != 0) {
                         opt->vec_target->push_back(argv[++i]);
@@ -61,16 +67,15 @@ public:
                 } else if (opt->dbl_target) {
                     if (i+1 >= argc) throw Error("Option requires value: " + arg);
                     *opt->dbl_target = std::stod(argv[++i]);
+                } else if (opt->bool_target) {
+                    *opt->bool_target = true;
                 }
             } else {
                 throw Error("Unknown argument: " + arg);
             }
         }
         for (auto &o : opts) {
-            bool provided = (o.vec_target && !o.vec_target->empty()) ||
-                            (o.str_target && !o.str_target->empty()) ||
-                            (o.int_target) || (o.dbl_target);
-            if (o.required && !provided) throw Error("Missing required option: --" + o.name);
+            if (o.required && !o.seen) throw Error("Missing required option: --" + o.name);
         }
     }
 };

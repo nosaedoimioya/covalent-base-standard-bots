@@ -68,56 +68,38 @@ int processCalibrationData(const ProcessCalibrationOptions &in_opts) {
 int processCalibrationDataCLI(int argc, const char **argv) {
     ProcessCalibrationOptions opts;
     CLI::App app{"Load sysID sine-sweep data and produce calibration maps"};
-    app.add_option("data_path", opts.data_path,
-                   "Path to data folder with sysID files")->required();
-    app.add_option("poses", opts.poses,
-                   "Number of poses robot visits")->required();
-    app.add_option("axes", opts.axes,
-                   "Number of commanded axes per pose")->required();
-    app.add_option("--name", opts.robot_name, "Robot name")
-        ->default_val(opts.robot_name);
-    app.add_option("--format", opts.file_format, "Data file format")
-        ->default_val(opts.file_format)
-        ->check(CLI::IsMember({"csv", "npz", "npy"}));
+    auto &data_opt = app.add_option("data_path", opts.data_path,
+                   "Path to data folder with sysID files");
+    data_opt.required = true;
+    auto &poses_opt = app.add_option("poses", opts.poses,
+                   "Number of poses robot visits");
+    poses_opt.required = true;
+    auto &axes_opt = app.add_option("axes", opts.axes,
+                   "Number of commanded axes per pose");
+    axes_opt.required = true;
+    app.add_option("--name", opts.robot_name, "Robot name");
+    app.add_option("--format", opts.file_format, "Data file format");
     app.add_option("--numjoints", opts.num_joints,
-                   "Number of robot joints")
-        ->default_val(opts.num_joints);
-    app.add_option("--minfreq", opts.min_freq, "Min frequency [Hz]")
-        ->default_val(opts.min_freq);
-    app.add_option("--maxfreq", opts.max_freq, "Max frequency [Hz]")
-        ->default_val(opts.max_freq);
+                   "Number of robot joints");
+    app.add_option("--minfreq", opts.min_freq, "Min frequency [Hz]");
+    app.add_option("--maxfreq", opts.max_freq, "Max frequency [Hz]");
     app.add_option("--freqspace", opts.freq_space,
-                   "Frequency spacing [Hz]")
-        ->default_val(opts.freq_space);
-    app.add_option("--mdisp", opts.max_disp, "Max sweep stroke [rad]")
-        ->default_val(opts.max_disp);
-    app.add_option("--dwell", opts.dwell, "Post-sweep dwell [s]")
-        ->default_val(opts.dwell);
-    app.add_option("--timestep", opts.Ts, "Sampling time [s]")
-        ->default_val(opts.Ts);
-    app.add_option("--type", opts.sysid_type, "SysID type")
-        ->default_val(opts.sysid_type)
-        ->check(CLI::IsMember({"bcb", "sine"}));
-    app.add_option("--ctrl", opts.ctrl_config, "Control mode")
-        ->default_val(opts.ctrl_config)
-        ->check(CLI::IsMember({"joint", "task"}));
+                   "Frequency spacing [Hz]");
+    app.add_option("--mdisp", opts.max_disp, "Max sweep stroke [rad]");
+    app.add_option("--dwell", opts.dwell, "Post-sweep dwell [s]");
+    app.add_option("--timestep", opts.Ts, "Sampling time [s]");
+    app.add_option("--type", opts.sysid_type, "SysID type");
+    app.add_option("--ctrl", opts.ctrl_config, "Control mode");
     app.add_option("--macc", opts.max_acc,
-                   "Max acceleration [rad/s^2]")
-        ->default_val(opts.max_acc);
-    app.add_option("--mvel", opts.max_vel, "Max velocity [rad/s]")
-        ->default_val(opts.max_vel);
+                   "Max acceleration [rad/s^2]");
+    app.add_option("--mvel", opts.max_vel, "Max velocity [rad/s]");
     app.add_option("--sine-cycles", opts.sine_cycles,
-                   "Number of sine cycles per pose")
-        ->default_val(opts.sine_cycles);
-    app.add_option("--sensor", opts.sensor, "Sensor type")
-        ->default_val(opts.sensor)
-        ->check(CLI::IsMember({"ToolAcc", "JointPos"}));
+                   "Number of sine cycles per pose");
+    app.add_option("--sensor", opts.sensor, "Sensor type");
     app.add_option("--first-pose", opts.start_pose,
-                   "Starting pose index")
-        ->default_val(opts.start_pose);
+                   "Starting pose index");
     app.add_option("--max-map-size", opts.max_map_size,
-                   "Max poses per map")
-        ->default_val(opts.max_map_size);
+                   "Max poses per map");
     app.add_flag("--saved-maps", opts.saved_maps,
                  "Load existing calibration maps instead of generating new ones");
 
