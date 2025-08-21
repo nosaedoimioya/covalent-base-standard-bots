@@ -74,16 +74,9 @@ int processCalibrationData(const ProcessCalibrationOptions &in_opts) {
         throw std::runtime_error("No calibration maps found to fit.");
     }
     const std::string ext = fs::path(stored_maps.front()).extension().string();
-    // Integrate MapFitter: in this minimal pipeline we simply create the
-    // object and save placeholder models.
-    // identification::MapFitter fitter(
-    //     /*map_names=*/stored_maps,
-    //     /*num_positions=*/opts.poses,
-    //     /*axes_commanded=*/opts.axes,
-    //     /*num_joints=*/opts.num_joints
-    // );
+    
     identification::MapFitter fitter(/*axes=*/opts.axes,
-                                 /*input_features=*/3,   // V, R, inertia
+                                 /*input_features=*/3,   // [V_deg, R_mm, inertia]
                                  /*hidden=*/{64,64});
 
     if (ext == ".pkl") {
@@ -96,7 +89,6 @@ int processCalibrationData(const ProcessCalibrationOptions &in_opts) {
     } else {
         throw std::runtime_error("Unknown calibration map extension: " + ext);
     }
-    // fitter.fit_shaper_neural_network_twohead();
 
     auto base = fs::path(opts.data_path).filename().string();
     std::string model_dir = "../calibration/models/" + base + "/" +

@@ -180,7 +180,7 @@ def load_calibration_maps(args: argparse.Namespace):
         if start_pose >= last_pose:
             if start_pose < args.poses:
                 continue
-            ValueError(f"Start pose, {start_pose}, cannot be larger than the last pose, {last_pose}")
+            raise ValueError(f"Start pose, {start_pose}, cannot be larger than the last pose, {last_pose}")
 
         pickle_file = args.data_path + f'/{args.robot_name}_robot_calibration_map_lastPose{last_pose}_numAxes{args.axes}_startPose{start_pose}.pkl'
 
