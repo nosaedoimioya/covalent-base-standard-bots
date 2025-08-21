@@ -470,6 +470,7 @@ class CalibrationMap:
         #     is assumed to be in the negative z-direction in the universal frame.
 
         rotation_matrix = robot_model.get_rotation_matrix(joint_angles=init_joint_angles)
+        jacobian = robot_model.get_jacobian_matrix(joint_angles=init_joint_angles)
         # Position of vector of end-effector in the commanded joint frame
         T_Ej = np.eye(4)
         for k in range(axis_commanded,num_joints):
@@ -509,10 +510,15 @@ class CalibrationMap:
                 world_acc_data -= GRAVITY_VECTOR
             
             # ** Assume angular acceleration of the end-effector is zero **
+            axis_jacobian = jacobian[:,axis_commanded].reshape(3,1)
+            jacobian_tangent_dir = axis_jacobian / np.linalg.norm(axis_jacobian) # The norn should be the same as distance (check this)
+        
             # Tangential acceleration magnitude
-            joint_tang_acc = np.dot(world_acc_data,tangent_dir) # [m/s^2]
+            # joint_tang_acc = np.dot(world_acc_data,tangent_dir) # [m/s^2]
+            joint_tang_acc = np.dot(world_acc_data,jacobian_tangent_dir) # [m/s^2]
 
             # Divide by distance to get the angular acceleration
-            joint_output_acc[k] = joint_tang_acc / np.linalg.norm(d)
+            # joint_output_acc[k] = joint_tang_acc / np.linalg.norm(d)
+            joint_output_acc[k] = joint_tang_acc / np.linalg.norm(axis_jacobian) # [rad/s^2]
 
         return joint_output_acc

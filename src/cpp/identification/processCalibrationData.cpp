@@ -1,6 +1,8 @@
 #include "ProcessCalibrationData.hpp"
 #include "MapFitter.hpp"
 #include "SineSweepReader.hpp"
+#include "LegacyMapLoader.hpp"
+#include "NPZMapLoader.hpp"
 #include "CLI11.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -33,33 +35,73 @@ int processCalibrationData(const ProcessCalibrationOptions &in_opts) {
     std::vector<std::string> stored_maps;
     if (opts.saved_maps) {
         int start = opts.start_pose;
+        if (start >= opts.poses) {
+            throw std::runtime_error("'start_pose' must be < 'poses' when --saved-maps is set");
+        }
         while (start < opts.poses) {
             int last = std::min(start + opts.max_map_size, opts.poses);
             std::ostringstream fn;
             fn << opts.data_path << "/" << opts.robot_name
-               << "_robot_calibration_map_lastPose" << last
-               << "_numAxes" << opts.axes
-               << "_startPose" << start << ".pkl";
+            << "_robot_calibration_map_lastPose" << last
+            << "_numAxes" << opts.axes
+            << "_startPose" << start << ".pkl";
             if (!fs::exists(fn.str())) {
-                throw std::runtime_error("Calibration map file " + fn.str() + " doesn't exist.");
+                throw std::runtime_error(
+                    "Calibration map file " + fn.str() + " doesn't exist. "
+                    "Remove the --saved-maps flag to generate new maps.");
             }
             stored_maps.push_back(fn.str());
             start = last;
         }
     } else {
-        SineSweepReader reader(opts.data_path, opts.poses, opts.axes,
-                               opts.robot_name, opts.file_format,
-                               opts.num_joints, opts.min_freq, opts.max_freq,
-                               opts.freq_space, opts.max_disp, opts.dwell,
-                               opts.Ts, opts.ctrl_config, opts.max_acc,
-                               opts.max_vel, opts.sine_cycles, opts.max_map_size);
-        stored_maps = reader.get_calibration_maps();
+        if (opts.sysid_type == "bcb") {
+            std::cout << "Using BCB system identification type.\n";
+            // BCB isn’t implemented, acknowledge and throw no-op like Python:
+            throw std::runtime_error("BCB sysid_type not yet implemented; use --type sine");
+        } else {
+            SineSweepReader reader(opts.data_path, opts.poses, opts.axes,
+                                opts.robot_name, opts.file_format,
+                                opts.num_joints, opts.min_freq, opts.max_freq,
+                                opts.freq_space, opts.max_disp, opts.dwell,
+                                opts.Ts, opts.ctrl_config, opts.max_acc,
+                                opts.max_vel, opts.sine_cycles, opts.max_map_size);
+            stored_maps = reader.get_calibration_maps();
+        }
     }
 
+    // Decide how to load and train based on map format
+    if (stored_maps.empty()) {
+        throw std::runtime_error("No calibration maps found to fit.");
+    }
+    const std::string ext = fs::path(stored_maps.front()).extension().string();
     // Integrate MapFitter: in this minimal pipeline we simply create the
     // object and save placeholder models.
-    identification::MapFitter fitter(opts.axes, 1, {8});
-    std::string model_dir = opts.data_path + "/models";
+    // identification::MapFitter fitter(
+    //     /*map_names=*/stored_maps,
+    //     /*num_positions=*/opts.poses,
+    //     /*axes_commanded=*/opts.axes,
+    //     /*num_joints=*/opts.num_joints
+    // );
+    identification::MapFitter fitter(/*axes=*/opts.axes,
+                                 /*input_features=*/3,   // V, R, inertia
+                                 /*hidden=*/{64,64});
+
+    if (ext == ".pkl") {
+        // Legacy path: load .pkl, build tensors, train
+        LegacyTensors T = LoadLegacyTensorsFromPickle(stored_maps, opts.axes);
+        fitter.train(T.features, T.modes, T.orders, T.masks, /*epochs=*/200, /*lr=*/1e-3);
+    } else if (ext == ".npz") {
+        auto T = LoadNPZTensorsFromNPZ(stored_maps, opts.axes);
+        fitter.train(T.features, T.modes, T.orders, T.masks, /*epochs=*/200, /*lr=*/1e-3);
+    } else {
+        throw std::runtime_error("Unknown calibration map extension: " + ext);
+    }
+    // fitter.fit_shaper_neural_network_twohead();
+
+    auto base = fs::path(opts.data_path).filename().string();
+    std::string model_dir = "../calibration/models/" + base + "/" +
+        opts.robot_name + "_robot_predictor_" + opts.ctrl_config + "_numAxes" + std::to_string(opts.axes);
+    fs::create_directories(model_dir);
     fitter.save_models(model_dir);
 
     return static_cast<int>(stored_maps.size());
@@ -78,7 +120,8 @@ int processCalibrationDataCLI(int argc, char **argv) {
                    "Number of commanded axes per pose");
     axes_opt.required = true;
     app.add_option("--name", opts.robot_name, "Robot name");
-    app.add_option("--format", opts.file_format, "Data file format");
+    auto &fmt_opt = app.add_option("--format", opts.file_format, "Data file format");
+    fmt_opt.check(CLI::IsMember({"csv","npz","npy"}));
     app.add_option("--numjoints", opts.num_joints,
                    "Number of robot joints");
     app.add_option("--minfreq", opts.min_freq, "Min frequency [Hz]");
@@ -88,14 +131,17 @@ int processCalibrationDataCLI(int argc, char **argv) {
     app.add_option("--mdisp", opts.max_disp, "Max sweep stroke [rad]");
     app.add_option("--dwell", opts.dwell, "Post-sweep dwell [s]");
     app.add_option("--timestep", opts.Ts, "Sampling time [s]");
-    app.add_option("--type", opts.sysid_type, "SysID type");
-    app.add_option("--ctrl", opts.ctrl_config, "Control mode");
+    auto &type_opt = app.add_option("--type", opts.sysid_type, "SysID type");
+    type_opt.check(CLI::IsMember({"bcb","sine"}));
+    auto &ctrl_opt = app.add_option("--ctrl", opts.ctrl_config, "Control mode");
+    ctrl_opt.check(CLI::IsMember({"joint","task"}));
     app.add_option("--macc", opts.max_acc,
                    "Max acceleration [rad/s^2]");
     app.add_option("--mvel", opts.max_vel, "Max velocity [rad/s]");
     app.add_option("--sine-cycles", opts.sine_cycles,
                    "Number of sine cycles per pose");
-    app.add_option("--sensor", opts.sensor, "Sensor type");
+    auto &sens_opt = app.add_option("--sensor", opts.sensor, "Sensor type");
+    sens_opt.check(CLI::IsMember({"ToolAcc","JointPos"}));
     app.add_option("--first-pose", opts.start_pose,
                    "Starting pose index");
     app.add_option("--max-map-size", opts.max_map_size,
@@ -171,14 +217,18 @@ PYBIND11_MODULE(ProcessCalibrationData, m) {
         py::arg("max_map_size") = ProcessCalibrationOptions().max_map_size,
         py::arg("saved_maps") = ProcessCalibrationOptions().saved_maps);
     m.def("processCalibrationDataCLI",
-      [](const std::vector<std::string> &args) {
-          std::vector<char*> argv;
-          argv.reserve(args.size());
-          for (auto &s : args) {
-              argv.push_back(const_cast<char*>(s.c_str()));
-          }
-          int argc = static_cast<int>(argv.size());
-          return processCalibrationDataCLI(argc, argv.data());
-      },
-      py::arg("args"));
+    [](const std::vector<std::string> &args) {
+        std::vector<std::string> with_prog;
+        with_prog.reserve(args.size() + 1);
+        with_prog.emplace_back("ProcessCalibrationDataCLI");
+        with_prog.insert(with_prog.end(), args.begin(), args.end());
+
+        std::vector<char*> argv;
+        argv.reserve(with_prog.size());
+        for (auto &s : with_prog) argv.push_back(const_cast<char*>(s.c_str()));
+
+        int argc = static_cast<int>(argv.size());
+        return processCalibrationDataCLI(argc, argv.data());
+    },
+    py::arg("args"));
 }

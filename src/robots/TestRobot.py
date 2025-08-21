@@ -1,4 +1,4 @@
-# robots/TestRobot.py
+# src/robots/TestRobot.py
 # This module defines a TestRobot class for testing purposes.
 
 import os

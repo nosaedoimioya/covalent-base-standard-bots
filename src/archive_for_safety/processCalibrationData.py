@@ -126,6 +126,7 @@ def generate_calibration_maps(args: argparse.Namespace):
     stored_maps = []
     if args.sysid_type == 'bcb':
         print("Using BCB system identification type.")
+        raise NotImplementedError("BCB system identification type is not implemented yet.")
     else:
         print("Using Sine system identification type.")
         # Create SineSweepReader instance
@@ -217,11 +218,6 @@ def main():
     else:
         print("Generating new calibration maps...")
         stored_map_names = generate_calibration_maps(args)
-
-    # print(f"Loading from:     {prefix}")
-    print(f"Poses:            {args.poses}")
-    print(f"Axes commanded:   {args.axes}")
-    print(f"Joints on robot:  {args.num_joints}")
 
     # Generate neural network fits
     # ====================================

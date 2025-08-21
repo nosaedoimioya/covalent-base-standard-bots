@@ -48,4 +48,4 @@ int processCalibrationData(const ProcessCalibrationOptions &opts);
  * @param argv Argument vector.
  * @return Status code, 0 on success.
  */
-int processCalibrationDataCLI(int argc, const char **argv);
+int processCalibrationDataCLI(int argc, char **argv);

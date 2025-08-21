@@ -76,9 +76,17 @@ if(pybind11_FOUND)
 
     pybind11_add_module(ProcessCalibrationData MODULE ProcessCalibrationData.cpp)
     target_link_libraries(ProcessCalibrationData PRIVATE ${IDENTIFICATION_DEPS})
+
+    pybind11_add_module(LegacyMapLoader MODULE LegacyMapLoader.cpp)
+    target_link_libraries(LegacyMapLoader PRIVATE ${IDENTIFICATION_DEPS})
+
 else()
     message(STATUS "pybind11 not found; identification Python modules will not be built")
 endif()
+
+add_library(NPZMapLoader STATIC NPZMapLoader.cpp)
+target_link_libraries(NPZMapLoader PRIVATE ${IDENTIFICATION_DEPS})
+target_include_directories(NPZMapLoader PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 install(
     FILES
@@ -87,5 +95,7 @@ install(
         SineSweepReader.hpp
         ProcessCalibrationData.hpp
         FineTuneModelGen.hpp
+        LegacyMapLoader.hpp
+        NPZMapLoader.hpp
     DESTINATION include/identification
 )
