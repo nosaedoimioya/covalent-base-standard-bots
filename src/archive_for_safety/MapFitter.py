@@ -243,7 +243,7 @@ class MapFitter:
                 verbose=0,
             )
 
-        self.nn_models[f'axis{axis}'] = dict(model=model)
+            self.nn_models[f'axis{axis}'] = dict(model=model)
 
         self.models_exist = True
 
