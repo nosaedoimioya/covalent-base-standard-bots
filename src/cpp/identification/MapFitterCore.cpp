@@ -108,6 +108,7 @@ MapFitter::infer(int axis, const torch::Tensor &feature) {
 
 void MapFitter::save_models(const std::string &directory) const {
     for (size_t i = 0; i < models_.size(); ++i) {
+        std::cout << "Saving model for axis " << i << " to " << directory<< "/axis_" << i << ".pt" << "\n";
         std::ostringstream fn;
         fn << directory << "/axis_" << i << ".pt";
         torch::save(models_[i], fn.str());

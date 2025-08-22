@@ -2,22 +2,22 @@
 from __future__ import annotations
 # Import compiled extensions directly (top-level names)
 try:
-    from MapGeneration import CalibrationMap
+    from build.src.cpp.identification.MapGeneration import CalibrationMap
 except Exception as exc:
     raise ImportError("MapGeneration extension not built") from exc
 
 try:
-    from MapFitter import MapFitter
+    from build.src.cpp.identification.MapFitter import MapFitter
 except Exception as exc:
     raise ImportError("MapFitter extension not built") from exc
 
 try:
-    from SineSweepReader import SineSweepReader
+    from build.src.cpp.identification.SineSweepReader import SineSweepReader
 except Exception as exc:
     raise ImportError("SineSweepReader extension not built") from exc
 
 try:
-    from ProcessCalibrationData import processCalibrationData
+    from build.src.cpp.identification.ProcessCalibrationData import processCalibrationData
 except Exception as exc:
     raise ImportError("ProcessCalibrationData extension not built") from exc
 

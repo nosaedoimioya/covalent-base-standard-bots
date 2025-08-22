@@ -29,8 +29,8 @@ import pickle, numpy as _np
 
 class _RedirectingUnpickler(pickle.Unpickler):
     _targets = {
-        ('src.archive_for_safety.MapGeneration','CalibrationMap'),
-        ('src.identification.MapGeneration','CalibrationMap'),
+        ('src.identification.MapGenerationDelete', 'CalibrationMap',
+         'build.src.cpp.identification.MapGeneration','CalibrationMap'),
     }
     def find_class(self, module, name):
         if (module, name) in self._targets:
@@ -70,12 +70,12 @@ def _modes_from_den(a, real_tol=1e-4, zeta_min=0.01):
     return modes
 )PY";
 
-    py::dict globals = py::dict(py::module::import("__main__").attr("__dict__"));
-    py::dict locals;
-    py::exec(py::str(kHelper), globals, locals);
+    py::dict env;
+    env["__builtins__"] = py::module::import("builtins");  // optional but tidy
+    py::exec(py::str(kHelper), env, env);
 
-    py::object load_legacy_pickle = locals["_load_legacy_pickle"];
-    py::object modes_from_den = locals["_modes_from_den"];
+    py::object load_legacy_pickle = env["_load_legacy_pickle"];
+    py::object modes_from_den    = env["_modes_from_den"];
 
     // Per-axis accumulators
     std::vector<std::vector<float>> X_by_axis(axes);     // flattened [V_deg, R_mm, inertia]

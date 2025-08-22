@@ -203,8 +203,9 @@ std::vector<std::string> SineSweepReader::get_calibration_maps() {
 
     // Create Python Dynamics model once (you can also swap to RobotInterface if you prefer)
     py::object robot_model = make_robot_model_from_name(robot_name_);
-
+    std::cout << "Using robot model: " << robot_name_ << "\n";
     for (std::size_t pass = 0; pass < runs; ++pass) {
+        std::cout << "Processing pass " << pass + 1 << " of " << runs << "\n";
         const std::size_t start_pose = pass * max_map_size_;
         const std::size_t last_pose  = (max_map_size_ == 0) ? num_poses_ : std::min(num_poses_, (pass + 1) * max_map_size_);
         const std::size_t batch_size = last_pose - start_pose;
@@ -212,27 +213,30 @@ std::vector<std::string> SineSweepReader::get_calibration_maps() {
         if (batch_size == 0) continue;
 
         // Create the map container for this batch
+        std::cout << "Generating map for poses " << start_pose << " to " << last_pose - 1 << "\n";
         CalibrationMap cmap(static_cast<int>(batch_size),
                             static_cast<int>(num_axes_),
                             static_cast<int>(num_joints_));
 
 
-        for (std::size_t p = 0; p < batch_size; ++p) {
+        for (std::size_t p = 0; p < num_poses_; ++p) {
             const std::size_t pose = start_pose + p;
-
+            std::cout << "Processing pose " << pose << " of " << num_poses_ - 1 << "\n";
             // Load per-axis motion; build segments via correlation; call generatePoint
             for (std::size_t a = 0; a < num_axes_; ++a) {
                 const std::string dyn_file =
                     data_folder_ + "/robotData_motion_pose" + std::to_string(pose) +
                     "_axis" + std::to_string(a) + "." + data_format_;
-
+                std::cout << "Loading dynamics file: " << dyn_file << "\n";
                 // Use Python Utility loader if available; fallback to C++
                 Eigen::MatrixXd D;
                 try {
+                    std::cout << "Attempting to load with Python utility...\n";
                     py::object util = py::module::import("util.Utility");
                     py::tuple res   = util.attr("load_data_file")(data_format_, dyn_file).cast<py::tuple>();
                     D = res[0].cast<Eigen::MatrixXd>();
                 } catch (...) {
+                    std::cout << "Python utility failed; using C++ fallback loader.\n";
                     D = load_matrix_fallback(dyn_file);
                 }
 
@@ -259,6 +263,10 @@ std::vector<std::string> SineSweepReader::get_calibration_maps() {
                 std::vector<double> init_q(num_joints_);
                 for (int j=0;j<num_joints_;++j) init_q[j] = qcmd(0,j);
 
+                std::cout << "Initial joint angles: ";
+                for (double q : init_q) std::cout << q << " ";
+                std::cout << "\n";
+                
                 // ---- segment detection (same as Python correlate_sine_wave)
                 std::vector<std::pair<int,int>> begin_end;
                 std::vector<double>              freqs;

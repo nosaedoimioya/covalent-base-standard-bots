@@ -34,44 +34,67 @@ int processCalibrationData(const ProcessCalibrationOptions &in_opts) {
 
     std::vector<std::string> stored_maps;
     if (opts.saved_maps) {
+        std::cout << "Using saved calibration maps from disk.\n";
         int start = opts.start_pose;
         if (start >= opts.poses) {
             throw std::runtime_error("'start_pose' must be < 'poses' when --saved-maps is set");
         }
+        std::vector<std::string> npz_maps, pkl_maps;
+
         while (start < opts.poses) {
             int last = std::min(start + opts.max_map_size, opts.poses);
-            std::ostringstream fn;
-            fn << opts.data_path << "/" << opts.robot_name
-            << "_robot_calibration_map_lastPose" << last
-            << "_numAxes" << opts.axes
-            << "_startPose" << start << ".pkl";
-            if (!fs::exists(fn.str())) {
+
+            std::ostringstream base;
+            base << opts.data_path << "/" << opts.robot_name
+                << "_robot_calibration_map_lastPose" << last
+                << "_numAxes" << opts.axes
+                << "_startPose" << start;
+
+            const std::string npz = base.str() + ".npz";
+            const std::string pkl = base.str() + ".pkl";
+
+            if (fs::exists(npz)) {
+                npz_maps.push_back(npz);
+            } else if (fs::exists(pkl)) {
+                pkl_maps.push_back(pkl);
+            } else {
                 throw std::runtime_error(
-                    "Calibration map file " + fn.str() + " doesn't exist. "
+                    "Calibration map file not found (tried: " + npz + " and " + pkl + "). "
                     "Remove the --saved-maps flag to generate new maps.");
             }
-            stored_maps.push_back(fn.str());
+
             start = last;
         }
+
+        if (!npz_maps.empty() && !pkl_maps.empty()) {
+            std::cout << "Found both .npz and .pkl maps; preferring .npz and ignoring .pkl.\n";
+        }
+
+        stored_maps = !npz_maps.empty() ? std::move(npz_maps) : std::move(pkl_maps);
     } else {
+        std::cout << "Generating new calibration maps from raw data.\n";
         if (opts.sysid_type == "bcb") {
             std::cout << "Using BCB system identification type.\n";
             // BCB isn’t implemented, acknowledge and throw no-op like Python:
             throw std::runtime_error("BCB sysid_type not yet implemented; use --type sine");
         } else {
+            std::cout << "Using Sine Sweep system identification type.\n";
             SineSweepReader reader(opts.data_path, opts.poses, opts.axes,
                                 opts.robot_name, opts.file_format,
                                 opts.num_joints, opts.min_freq, opts.max_freq,
                                 opts.freq_space, opts.max_disp, opts.dwell,
                                 opts.Ts, opts.ctrl_config, opts.max_acc,
                                 opts.max_vel, opts.sine_cycles, opts.max_map_size);
+            std::cout << "Reading " << opts.poses << " poses with "
+                      << opts.axes << " axes...\n";
             stored_maps = reader.get_calibration_maps();
         }
     }
 
-    // Decide how to load and train based on map format
     if (stored_maps.empty()) {
-        throw std::runtime_error("No calibration maps found to fit.");
+        throw std::runtime_error("No calibration maps found to process.");
+    } else {
+        std::cout << "Found " << stored_maps.size() << " calibration maps.\n";
     }
     const std::string ext = fs::path(stored_maps.front()).extension().string();
     
@@ -80,21 +103,30 @@ int processCalibrationData(const ProcessCalibrationOptions &in_opts) {
                                  /*hidden=*/{64,64});
 
     if (ext == ".pkl") {
+        std::cout << "Processing legacy .pkl maps.\n";
         // Legacy path: load .pkl, build tensors, train
         LegacyTensors T = LoadLegacyTensorsFromPickle(stored_maps, opts.axes);
         fitter.train(T.features, T.modes, T.orders, T.masks, /*epochs=*/200, /*lr=*/1e-3);
     } else if (ext == ".npz") {
+        std::cout << "Processing .npz maps.\n";
         auto T = LoadNPZTensorsFromNPZ(stored_maps, opts.axes);
         fitter.train(T.features, T.modes, T.orders, T.masks, /*epochs=*/200, /*lr=*/1e-3);
     } else {
         throw std::runtime_error("Unknown calibration map extension: " + ext);
     }
 
-    auto base = fs::path(opts.data_path).filename().string();
-    std::string model_dir = "../calibration/models/" + base + "/" +
-        opts.robot_name + "_robot_predictor_" + opts.ctrl_config + "_numAxes" + std::to_string(opts.axes);
+    std::cout << "Training complete. Saving models...\n";
+    fs::path data_p = fs::weakly_canonical(fs::path(opts.data_path));
+    fs::path base   = data_p.filename();                  // e.g. "test"
+    fs::path models_root = data_p.parent_path().parent_path() / "models" / base;
+    std::ostringstream leaf;
+    leaf << opts.robot_name << "_robot_predictor_" << opts.ctrl_config
+        << "_numAxes" << opts.axes;
+    fs::path model_dir = models_root / leaf.str();
     fs::create_directories(model_dir);
+    std::cout << "Saving models to: " << model_dir << "\n";
     fitter.save_models(model_dir);
+    std::cout << "Models saved to: " << model_dir << "\n";
 
     return static_cast<int>(stored_maps.size());
 }

@@ -10,9 +10,10 @@ __pycache__/
 # C extensions
 *.so
 
-# Pickle extensions
+# Model file extensions
 *.pkl
 *.keras
+*.pt
 
 # Temporary results
 output/*
