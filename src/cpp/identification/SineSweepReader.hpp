@@ -86,7 +86,7 @@ public:
     /**
      * @brief Clear any stored calibration map paths.
      */
-    void reset_calibration_maps() { calibration_maps_.clear(); }
+    void reset_calibration_maps();
 
     // Helper routines for reading common data formats ----------------------
 

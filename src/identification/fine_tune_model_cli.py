@@ -10,7 +10,7 @@ from typing import Optional, Sequence
 try:  # pragma: no cover - extension may not be built
     from .FineTuneModelGen import runFineTuneModelGen
 except Exception as exc:  # pragma: no cover - extension may not be built
-    raise ImportError("MapFitter extension not built") from exc
+    raise ImportError("_FineTuneModelGen extension not built") from exc
 
 def main(argv: Optional[Sequence[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Fine-tune saved shaper NN models")

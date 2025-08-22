@@ -332,6 +332,8 @@ std::vector<std::string> SineSweepReader::get_calibration_maps() {
     return calibration_maps_;
 }
 
+void SineSweepReader::reset_calibration_maps() { calibration_maps_.clear(); }
+
 std::vector<std::string> SineSweepReader::read_file(
     const std::string& filename) const {
     std::ifstream file(filename);
