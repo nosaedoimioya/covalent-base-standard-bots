@@ -20,3 +20,4 @@ if(NOT iir_FOUND)
 endif()
 
 add_subdirectory(src/cpp/identification)
+add_subdirectory(src/cpp/control)
