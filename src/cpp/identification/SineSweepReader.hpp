@@ -15,32 +15,49 @@
  * @file SineSweepReader.hpp
  * @brief Lightweight C++ port of the Python SineSweepReader used for
  *        processing identification data.
+ * 
+ * This module provides comprehensive utilities for reading and processing sine sweep
+ * identification data from various file formats (CSV, NPY, NPZ). It handles the
+ * complete pipeline from raw data loading to calibration map generation, supporting
+ * multiple robot configurations and data formats commonly used in robot dynamics
+ * identification experiments.
  */
 
 /**
  * @brief Parses sine sweep identification data and exposes helper utilities.
+ * 
+ * SineSweepReader is the core class for processing robot identification experiments
+ * that use sine sweep excitation signals. It manages the complete data processing
+ * pipeline including file I/O, data format conversion, and calibration map generation.
+ * The class supports multiple input formats and provides utilities for handling
+ * different robot configurations and experimental setups.
  */
 class SineSweepReader {
 public:
     /**
      * @brief Construct a reader for sine sweep datasets.
-     * @param data_folder   Root directory of the data.
-     * @param num_poses     Number of pose samples.
-     * @param num_axes      Number of commanded axes.
-     * @param robot_name    Name of the robot.
-     * @param data_format   Input data format (csv, npy, npz).
-     * @param num_joints    Number of robot joints.
-     * @param min_freq      Minimum excitation frequency.
-     * @param max_freq      Maximum excitation frequency.
-     * @param freq_space    Frequency spacing.
-     * @param max_disp      Maximum displacement.
-     * @param dwell         Dwell time between sweeps.
-     * @param Ts            Sample period.
+     * 
+     * Initializes a SineSweepReader with all necessary parameters for processing
+     * sine sweep identification data. The constructor validates parameters and
+     * prepares the reader for data processing operations.
+     * 
+     * @param data_folder   Root directory containing the identification data.
+     * @param num_poses     Number of pose samples in the dataset.
+     * @param num_axes      Number of commanded axes during identification.
+     * @param robot_name    Name/identifier of the robot being identified.
+     * @param data_format   Input data format ("csv", "npy", "npz").
+     * @param num_joints    Number of joints in the robot.
+     * @param min_freq      Minimum excitation frequency in Hz.
+     * @param max_freq      Maximum excitation frequency in Hz.
+     * @param freq_space    Frequency spacing between excitation points.
+     * @param max_disp      Maximum displacement amplitude in radians.
+     * @param dwell         Dwell time between frequency sweeps in seconds.
+     * @param Ts            Sample period in seconds.
      * @param ctrl_config   Control configuration identifier.
-     * @param max_acc       Maximum acceleration.
-     * @param max_vel       Maximum velocity.
-     * @param sine_cycles   Number of sine cycles.
-     * @param max_map_size  Maximum number of maps to retain.
+     * @param max_acc       Maximum acceleration limit in rad/s².
+     * @param max_vel       Maximum velocity limit in rad/s.
+     * @param sine_cycles   Number of sine cycles per frequency point.
+     * @param max_map_size  Maximum number of poses per calibration map.
      */
     SineSweepReader(const std::string& data_folder,
                     std::size_t num_poses,
@@ -79,12 +96,20 @@ public:
 
     /**
      * @brief Retrieve paths of generated calibration maps.
+     * 
+     * Returns the file paths of all calibration maps that have been generated
+     * or discovered by this reader. These maps contain the processed dynamics
+     * parameters extracted from the sine sweep data.
+     * 
      * @return Vector of map file paths.
      */
     std::vector<std::string> get_calibration_maps();
     
     /**
      * @brief Clear any stored calibration map paths.
+     * 
+     * Resets the internal cache of calibration map paths. This is useful when
+     * reprocessing data or when the map generation process needs to be restarted.
      */
     void reset_calibration_maps();
 
@@ -93,28 +118,38 @@ public:
     /**
      * @brief Compute how many calibration maps are required.
      *
-     * Mirrors the logic of the legacy Python implementation which divides the
-     * total number of poses by the maximum allowed map size and rounds up with a
-     * small tolerance to account for floating point error.
+     * Calculates the number of calibration maps needed based on the total number
+     * of poses and the maximum allowed map size. This mirrors the logic of the
+     * legacy Python implementation which divides the total poses by the maximum
+     * map size and rounds up with tolerance for floating point error.
+     * 
+     * @return Number of calibration maps required to store all pose data.
      */
     std::size_t compute_num_maps() const;
 
     /**
      * @brief Parse a simple delimited text file into numeric rows.
      *
-     * Each non-empty line is split on commas and converted to ``double``.  The
-     * routine is intentionally lightweight and is used by the tests to validate
-     * data handling parity with the historic Python ``SineSweepReader``.
+     * Reads a text file and converts each non-empty line into a vector of doubles
+     * by splitting on commas. This routine is intentionally lightweight and is used
+     * by tests to validate data handling parity with the historic Python implementation.
+     * The function handles basic CSV parsing with minimal overhead.
      *
-     * @param filename Path to the data file.
-     * @return Parsed matrix stored as a vector of rows.
+     * @param filename Path to the data file to parse.
+     * @return Parsed matrix stored as a vector of rows, where each row is a vector of doubles.
      */
     std::vector<std::vector<double>> parse_data(const std::string& filename) const;
 
     /**
      * @brief Load a CSV file into an Eigen matrix.
-     * @param filename Path to the CSV file.
-     * @return Parsed matrix.
+     * 
+     * Parses a comma-separated values file and converts it into an Eigen MatrixXd
+     * for efficient numerical operations. The function handles basic CSV format
+     * with automatic dimension detection based on the data.
+     * 
+     * @param filename Path to the CSV file to load.
+     * @return Parsed matrix as Eigen::MatrixXd.
+     * @throws std::runtime_error if the file cannot be opened or parsed.
      */
     Eigen::MatrixXd load_csv(const std::string& filename) const {
         std::ifstream file(filename);
@@ -144,8 +179,13 @@ public:
 
     /**
      * @brief Load an NPZ archive into a map of Eigen matrices.
-     * @param filename Path to the NPZ file.
-     * @return Mapping from array names to matrices.
+     * 
+     * Reads a NumPy compressed archive (.npz file) and extracts all arrays
+     * into a map where keys are array names and values are Eigen matrices.
+     * This is useful for loading complex datasets with multiple named arrays.
+     * 
+     * @param filename Path to the NPZ file to load.
+     * @return Mapping from array names to corresponding Eigen matrices.
      */
     std::unordered_map<std::string, Eigen::MatrixXd>
     load_npz(const std::string& filename) const {
@@ -171,8 +211,13 @@ public:
 
     /**
      * @brief Load a NumPy NPY array file.
-     * @param filename Path to the NPY file.
-     * @return Parsed matrix.
+     * 
+     * Reads a single NumPy array file (.npy) and converts it to an Eigen matrix.
+     * This function handles the binary NumPy format and automatically detects
+     * the array dimensions from the file header.
+     * 
+     * @param filename Path to the NPY file to load.
+     * @return Parsed matrix as Eigen::MatrixXd.
      */
     Eigen::MatrixXd load_npy(const std::string& filename) const {
         cnpy::NpyArray arr = cnpy::npy_load(filename);
@@ -190,25 +235,34 @@ public:
     }
 
 private:
-    std::string data_folder_;
-    std::size_t num_poses_;
-    std::size_t num_axes_;
-    std::string robot_name_;
-    std::string data_format_;
-    std::size_t num_joints_;
-    double min_freq_;
-    double max_freq_;
-    double freq_space_;
-    double max_disp_;
-    double dwell_;
-    double Ts_;
-    std::string ctrl_config_;
-    double max_acc_;
-    double max_vel_;
-    int sine_cycles_;
-    std::size_t max_map_size_;
+    std::string data_folder_;      ///< Root directory containing identification data
+    std::size_t num_poses_;        ///< Number of pose samples in the dataset
+    std::size_t num_axes_;         ///< Number of commanded axes during identification
+    std::string robot_name_;       ///< Name/identifier of the robot
+    std::string data_format_;      ///< Input data format (csv, npy, npz)
+    std::size_t num_joints_;       ///< Number of joints in the robot
+    double min_freq_;              ///< Minimum excitation frequency in Hz
+    double max_freq_;              ///< Maximum excitation frequency in Hz
+    double freq_space_;            ///< Frequency spacing between excitation points
+    double max_disp_;              ///< Maximum displacement amplitude in radians
+    double dwell_;                 ///< Dwell time between frequency sweeps in seconds
+    double Ts_;                    ///< Sample period in seconds
+    std::string ctrl_config_;      ///< Control configuration identifier
+    double max_acc_;               ///< Maximum acceleration limit in rad/s²
+    double max_vel_;               ///< Maximum velocity limit in rad/s
+    int sine_cycles_;              ///< Number of sine cycles per frequency point
+    std::size_t max_map_size_;     ///< Maximum number of poses per calibration map
 
-    std::vector<std::string> calibration_maps_;
+    std::vector<std::string> calibration_maps_;  ///< Cache of generated calibration map paths
 
+    /**
+     * @brief Read file contents into a vector of strings.
+     * 
+     * Helper function to read a text file line by line into a vector of strings.
+     * Used internally for parsing configuration files and other text-based data.
+     * 
+     * @param filename Path to the file to read.
+     * @return Vector of strings, one per line in the file.
+     */
     std::vector<std::string> read_file(const std::string& filename) const;
 };

@@ -7,6 +7,17 @@
 #include <string>
 #include <vector>
 
+/**
+ * @file CLI11.hpp
+ * @brief Simplified command-line argument parsing library.
+ * 
+ * This is a minimal implementation of CLI11, a command-line argument parsing
+ * library. It provides basic functionality for parsing command-line options,
+ * positional arguments, and validation. This simplified version is used by
+ * the identification module's command-line interfaces for processing
+ * calibration data and model training.
+ */
+
 namespace CLI {
 
 class Error : public std::runtime_error {
