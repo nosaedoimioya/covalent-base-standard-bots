@@ -14,7 +14,7 @@ int main() {
         
         // Test single mode parameters (natural frequency = 10 rad/s, damping = 0.1)
         Eigen::MatrixXd params(1, 2);
-        params << 10.0, 0.1;
+        params << 94.0, 0.3;
         
         // Test single sample shaping
         double input_sample = 1.0;
