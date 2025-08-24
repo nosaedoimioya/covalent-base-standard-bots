@@ -2,6 +2,11 @@
 from __future__ import annotations
 # Import compiled extensions directly (top-level names)
 try:
+    import identification.MapGenerationDelete
+except Exception as exc:
+    raise ImportError("MapGeneration extension not built") from exc
+
+try:
     from build.src.cpp.identification.MapGeneration import CalibrationMap
 except Exception as exc:
     raise ImportError("MapGeneration extension not built") from exc

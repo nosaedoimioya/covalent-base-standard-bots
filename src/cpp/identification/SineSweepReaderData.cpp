@@ -266,7 +266,7 @@ std::vector<std::string> SineSweepReader::get_calibration_maps() {
                 std::cout << "Initial joint angles: ";
                 for (double q : init_q) std::cout << q << " ";
                 std::cout << "\n";
-                
+
                 // ---- segment detection (same as Python correlate_sine_wave)
                 std::vector<std::pair<int,int>> begin_end;
                 std::vector<double>              freqs;
@@ -274,7 +274,8 @@ std::vector<std::string> SineSweepReader::get_calibration_maps() {
                 Eigen::VectorXd INPUT_temp = qcmd.col(static_cast<int>(a));
                 INPUT_temp.array() -= qcmd(0, static_cast<int>(a));
                 int f_start_init = 0;
-
+                
+                std::cout << "Getting sine segments for axis " << a << "\n";
                 for (double f : freq_range) {
                     auto seg = correlate_sine(INPUT_temp, f, Ts_, sine_cycles_, max_disp_, max_acc_);
                     int fs = std::max(seg.first,  f_start_init);
