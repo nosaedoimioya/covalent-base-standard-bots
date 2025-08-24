@@ -6,10 +6,10 @@
 #include <stdexcept>
 
 /**
- * @file InputShaper.hpp
+ * @file BaseShaper.hpp
  * @brief C++ implementation of input signal shaping for vibration suppression.
  * 
- * This module provides the InputShaper class for shaping input signals to suppress
+ * This module provides the BaseShaper class for shaping input signals to suppress
  * vibrations in mechanical systems. It implements Zero-Vibration-Derivative (ZVD)
  * shapers that can handle multiple vibration modes with varying dynamics parameters.
  * The class maintains an internal buffer for online signal processing and supports
@@ -19,26 +19,26 @@
 namespace control {
 
 /**
- * @brief Input signal shaper for vibration suppression using ZVD filters.
+ * @brief Base signal shaper for vibration suppression using ZVD filters.
  * 
- * InputShaper implements Zero-Vibration-Derivative (ZVD) input shaping to suppress
+ * BaseShaper implements Zero-Vibration-Derivative (ZVD) input shaping to suppress
  * vibrations in mechanical systems. It can handle multiple vibration modes with
  * varying natural frequencies and damping ratios. The class maintains an internal
  * buffer for online processing and supports both single-sample and batch trajectory
  * shaping operations.
  */
-class InputShaper {
+class BaseShaper {
 public:
     /**
-     * @brief Construct an InputShaper with specified sampling time.
+     * @brief Construct an BaseShaper with specified sampling time.
      * 
-     * Initializes the input shaper with the given sampling time. The internal
+     * Initializes the base shaper with the given sampling time. The internal
      * buffer is initialized empty and will be populated during the first shaping
      * operation.
      * 
      * @param Ts Sampling time in seconds.
      */
-    explicit InputShaper(double Ts);
+        explicit BaseShaper(double Ts);
 
     /**
      * @brief Shape a single input sample using current dynamics parameters.
@@ -60,7 +60,7 @@ public:
      * @brief Shape a complete trajectory using varying dynamics parameters.
      * 
      * Processes an entire trajectory using dynamics parameters that may vary
-     * at each time step. This function applies the input shaper to each sample
+     * at each time step. This function applies the base shaper to each sample
      * in the trajectory using the corresponding dynamics parameters.
      * 
      * @param x Input trajectory vector [num_samples x 1].
@@ -96,7 +96,6 @@ private:
      * 
      * Builds a single-mode Zero-Vibration-Derivative (ZVD) shaper impulse train
      * with the transfer function:
-     *   F(z) = (1 + 2*k*z^(-d) + k^2*z^(-2d)) / (1 + 2*k + k^2)
      * 
      * where k is the damping factor and d is the delay index.
      * 

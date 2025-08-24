@@ -1,17 +1,17 @@
-#include "InputShaper.hpp"
+#include "BaseShaper.hpp"
 #include <cmath>
 #include <algorithm>
 #include <stdexcept>
 
 namespace control {
 
-InputShaper::InputShaper(double Ts) : Ts_(Ts), M_(0) {
+BaseShaper::BaseShaper(double Ts) : Ts_(Ts), M_(0) {
     if (Ts <= 0.0) {
         throw std::invalid_argument("Sampling time must be positive");
     }
 }
 
-double InputShaper::shape_sample(double x_i, const Eigen::MatrixXd& frf_params) {
+double BaseShaper::shape_sample(double x_i, const Eigen::MatrixXd& frf_params) {
     // Validate input parameters
     if (frf_params.cols() != 2) {
         throw std::invalid_argument("frf_params must have exactly 2 columns");
@@ -46,7 +46,7 @@ double InputShaper::shape_sample(double x_i, const Eigen::MatrixXd& frf_params) 
     return x_shaped;
 }
 
-Eigen::VectorXd InputShaper::shape_trajectory(const Eigen::VectorXd& x, 
+Eigen::VectorXd BaseShaper::shape_trajectory(const Eigen::VectorXd& x, 
                                              const std::vector<Eigen::MatrixXd>& varying_params) {
     // Validate input dimensions
     if (x.size() == 0) {
@@ -69,7 +69,7 @@ Eigen::VectorXd InputShaper::shape_trajectory(const Eigen::VectorXd& x,
     return x_shaped;
 }
 
-std::pair<Eigen::VectorXd, int> InputShaper::compute_zvd_shaper(const Eigen::MatrixXd& params_array) {
+std::pair<Eigen::VectorXd, int> BaseShaper::compute_zvd_shaper(const Eigen::MatrixXd& params_array) {
     // Validate input parameters
     if (params_array.cols() != 2) {
         throw std::invalid_argument("params_array must have exactly 2 columns");
@@ -108,7 +108,7 @@ std::pair<Eigen::VectorXd, int> InputShaper::compute_zvd_shaper(const Eigen::Mat
     return {I, M};
 }
 
-std::pair<Eigen::VectorXd, int> InputShaper::compute_single_mode(double wn, double zeta) {
+std::pair<Eigen::VectorXd, int> BaseShaper::compute_single_mode(double wn, double zeta) {
     // Validate input parameters
     if (wn <= 0.0) {
         throw std::invalid_argument("Natural frequency must be positive");

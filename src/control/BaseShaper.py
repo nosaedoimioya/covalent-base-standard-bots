@@ -5,10 +5,10 @@ import numpy as np
 from collections import deque
 from typing import Tuple, List
 
-class InputShaper:
+class BaseShaper:
     def __init__(self, Ts: float):
         """
-        Initialize the InputShaper with the sampling time.
+        Initialize the BaseShaper with the sampling time.
         The buffer is initialized with zeros.
         Parameters:
             Ts: sampling time [s]
@@ -30,6 +30,14 @@ class InputShaper:
         Returns:
             x_shaped: shaped input sample
         """
+        # Validate input parameters
+        if not isinstance(frf_params, np.ndarray):
+            raise ValueError("frf_params must be a numpy array")
+        if frf_params.ndim != 2 or frf_params.shape[1] != 2:
+            raise ValueError("frf_params must have shape (m, 2)")
+        if frf_params.shape[0] == 0:
+            raise ValueError("frf_params cannot be empty")
+        
         # Compute new shaper and its length
         I, M_new = self.compute_zvd_shaper(params_array=frf_params)
 
@@ -58,9 +66,9 @@ class InputShaper:
         Returns:
             x_shaped: shaped trajectory
         """
-        # Check if x is a one-dimensional array or only has one column
-        if x.ndim != 1 or x.shape[1] != 1:
-            raise ValueError("x must be a one-dimensional array with one column")
+        # Check if x is a one-dimensional array
+        if x.ndim != 1:
+            raise ValueError("x must be a one-dimensional array")
 
         # Check if varying_params is a list of numpy arrays
         if not isinstance(varying_params, list):
@@ -90,33 +98,28 @@ class InputShaper:
           I: 1D array of length M+1 with combined impulse gains
           M: filter order (max delay index)
         """
-        # Check if params_array is a numpy array
+        # Validate params_array
         if not isinstance(params_array, np.ndarray):
             raise ValueError("params_array must be a numpy array")
-
-        # Check if params_array has exactly two columns
-        if params_array.shape[1] != 2:
-            raise ValueError("params_array must have 2 columns")
+        if params_array.ndim != 2 or params_array.shape[1] != 2:
+            raise ValueError("params_array must have shape (m, 2)")
+        if params_array.shape[0] == 0:
+            raise ValueError("params_array cannot be empty")
         
-        # Initialize I and M with the first mode in params_array
-        I = np.zeros(0)
-        M = 0
-        I, d = self.__compute_single_mode(wn=params_array[0, 0], zeta=params_array[0, 1])
-        I = np.convolve(I, I)
-        M = len(I) - 1
+        # Initialize with first mode
+        I, _ = self.__compute_single_mode(wn=params_array[0, 0], zeta=params_array[0, 1])
 
         # Convolve the remaining modes
         for i in range(1, params_array.shape[0]):
-            I, d = self.__compute_single_mode(wn=params_array[i, 0], zeta=params_array[i, 1])
-            I = np.convolve(I, I)
-            M = len(I) - 1
+            I_new, _ = self.__compute_single_mode(wn=params_array[i, 0], zeta=params_array[i, 1])
+            I = np.convolve(I, I_new)
 
+        M = len(I) - 1
         return I, M
 
     def __compute_single_mode(self, wn: float, zeta: float) -> Tuple[np.ndarray, int]:
         """
-        Build a single-mode ZVD (zero-vibration derivative) shaper impulse train:
-          F(z) = (1 + 2*k z^-d + k^2 z^-2d) / (1 + 2*k + k^2)
+        Build a single-mode shaper impulse train
 
         Parameters:
           wn: natural frequency [rad/s]
@@ -126,6 +129,11 @@ class InputShaper:
           impulse: array of length (2*d+1) with impulse amplitudes
           d:  integer delay index
         """
+        if wn <= 0:
+            raise ValueError("Natural frequency must be positive")
+        if zeta <= 0 or zeta >= 1:
+            raise ValueError("Damping ratio must be between 0 and 1")
+        
         wd = wn * np.sqrt(1 - zeta**2)
         k  = np.exp(-zeta * np.pi / np.sqrt(1 - zeta**2))
         Td = 2 * np.pi / wd                     # half-period of damped oscillation

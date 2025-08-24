@@ -1,4 +1,4 @@
-#include "InputShaper.hpp"
+#include "BaseShaper.hpp"
 #include <iostream>
 #include <iomanip>
 
@@ -7,10 +7,10 @@ using namespace control;
 int main() {
     try {
         // Test basic functionality
-        std::cout << "Testing InputShaper C++ implementation..." << std::endl;
+        std::cout << "Testing BaseShaper C++ implementation..." << std::endl;
         
-        // Create InputShaper with 0.001s sampling time
-        InputShaper shaper(0.001);
+        // Create BaseShaper with 0.001s sampling time
+        BaseShaper shaper(0.001);
         
         // Test single mode parameters (natural frequency = 10 rad/s, damping = 0.1)
         Eigen::MatrixXd params(1, 2);
