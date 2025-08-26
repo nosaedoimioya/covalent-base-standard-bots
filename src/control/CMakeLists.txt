@@ -5,9 +5,14 @@ find_package(Eigen3 REQUIRED)
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 find_package(pybind11 REQUIRED)
 
+# Set output directories for all targets
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
 # Create control library
 add_library(control_lib
-    BaseShaper.cpp
+    include/BaseShaper.cpp
 )
 
 # Set include directories
@@ -22,8 +27,8 @@ target_compile_features(control_lib PRIVATE cxx_std_17)
 
 # Create Python module
 pybind11_add_module(base_shaper
-    BaseShaperBindings.cpp
-    BaseShaper.cpp
+    include/BaseShaperBindings.cpp
+    include/BaseShaper.cpp
 )
 
 # Set include directories for Python module
@@ -38,7 +43,7 @@ target_compile_features(base_shaper PRIVATE cxx_std_17)
 
 # Create test executable
 add_executable(test_base_shaper
-    test_base_shaper.cpp
+    include/test_base_shaper.cpp
 )
 
 # Link test executable with control library
@@ -69,6 +74,6 @@ install(TARGETS base_shaper
     LIBRARY DESTINATION lib
 )
 
-install(FILES BaseShaper.hpp
-    DESTINATION include/control
+install(FILES include/BaseShaper.hpp
+    DESTINATION src/control/include
 )

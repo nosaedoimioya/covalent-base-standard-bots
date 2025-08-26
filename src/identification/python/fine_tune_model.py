@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import argparse
+import sys
+import os
 from typing import Optional, Sequence
 
-
+# Add the current directory to Python path to find the compiled modules
+sys.path.insert(0, os.path.dirname(__file__))
 
 try:  # pragma: no cover - extension may not be built
-    from .FineTuneModelGen import runFineTuneModelGen
+    from src.identification.lib.FineTuneModelGen import runFineTuneModelGen
 except Exception as exc:  # pragma: no cover - extension may not be built
-    raise ImportError("_FineTuneModelGen extension not built") from exc
+    raise ImportError("FineTuneModelGen extension not built") from exc
+
+__all__ = ["runFineTuneModelGen", "main"]
 
 def main(argv: Optional[Sequence[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Fine-tune saved shaper NN models")
@@ -21,7 +26,7 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     parser.add_argument("--save", default="", help="Output file for updated models")
     args = parser.parse_args(argv)
 
-    runFineTuneModelGen(args.model, args.maps, args.epochs, args.lr, args.save)
+    return runFineTuneModelGen(args.model, args.maps, args.epochs, args.lr, args.save)
 
 if __name__ == "__main__":  # pragma: no cover - manual execution
     main()

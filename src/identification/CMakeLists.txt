@@ -1,3 +1,11 @@
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
+
+# Set output directories for all targets
+# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/src/identification/lib)
+# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/src/identification/lib)
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/src/identification/lib)
+
 set(IDENTIFICATION_DEPS)
 set(PYTHON_DEPS)
 if(Torch_FOUND)
@@ -134,6 +142,8 @@ if(pybind11_FOUND)
     pybind11_add_module(FineTuneModelGen MODULE FineTuneModelGen.cpp)
     target_link_libraries(FineTuneModelGen 
         PRIVATE 
+            ident_core
+            mapfitter_core
             LegacyMapLoader
             NPZMapLoader
             ${IDENTIFICATION_DEPS})
@@ -152,8 +162,14 @@ else()
     message(STATUS "pybind11 not found; identification Python modules will not be built")
 endif()
 
+set(PY_PKG_DIR_LIB ${CMAKE_SOURCE_DIR}/src/identification/lib)
+set(PY_PKG_DIR_INCLUDE ${CMAKE_SOURCE_DIR}/src/identification/include)
 foreach(tgt IN ITEMS MapGeneration MapFitter SineSweepReader FineTuneModelGen ProcessCalibrationData)
   if(TARGET ${tgt})
+    set_target_properties(${tgt} PROPERTIES
+      LIBRARY_OUTPUT_DIRECTORY "${PY_PKG_DIR_LIB}")
+    set_target_properties(${tgt} PROPERTIES
+      INCLUDE_DIRECTORIES "${PY_PKG_DIR_INCLUDE}")
     target_link_options(${tgt} PRIVATE "-Wl,-undefined,error")
   endif()
 endforeach()
@@ -167,5 +183,5 @@ install(
         FineTuneModelGen.hpp
         LegacyMapLoader.hpp
         NPZMapLoader.hpp
-    DESTINATION include/identification
+    DESTINATION "${PY_PKG_DIR_INCLUDE}"
 )

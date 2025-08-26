@@ -10,19 +10,9 @@ import argparse
 import importlib
 
 try:
-    from build.src.cpp.identification.ProcessCalibrationData import processCalibrationData
+    from src.identification.lib.ProcessCalibrationData import processCalibrationData
 except Exception as exc:
     raise ImportError("ProcessCalibrationData extension not built") from exc
-
-# def _load_extension():
-#     try:  # pragma: no cover - extension may not be built
-#         module = importlib.import_module("ProcessCalibrationData")
-#     except Exception as exc:  # pragma: no cover - extension may not be built
-#         raise ImportError("ProcessCalibrationData extension not built") from exc
-#     return module.processCalibrationData
-
-
-# processCalibrationData = _load_extension()
 
 __all__ = ["processCalibrationData", "main"]
 

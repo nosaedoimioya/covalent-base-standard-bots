@@ -2,7 +2,7 @@
 # This module provides utility objects and functions for other scripts.
 
 from typing import List, Tuple
-import csv
+import os, csv, datetime
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.linalg import solve
@@ -256,3 +256,156 @@ def rotation_matrix_to_quaternion(rotation_mat: np.ndarray) -> np.ndarray:
         qz = 0.25 * S
 
     return np.array([qx, qy, qz, qw])
+
+def get_polar_coordinates(num_angles: int, num_radii: int, max_reach: float) -> Tuple[np.ndarray, np.ndarray]:
+    V = np.linspace(0, np.pi / 2, num_angles).tolist()
+    R = np.linspace(0.4 * max_reach, 0.8 * max_reach, num_radii).tolist()
+    return V, R
+
+def polar_to_cartesian(v: float, r: float, side_arm: float, 
+                       base_height: float, base_angle: float) -> Tuple[float, float, float]:
+    long = r * np.cos(v) * np.cos(base_angle)
+    width = side_arm - r * np.cos(v) * np.sin(base_angle)
+    height = base_height + r * np.sin(v)
+    return long, width, height
+
+def cartesian_to_polar(long: float, width: float, height: float,
+                       side_arm: float, base_height: float) -> Tuple[float, float]:
+    """
+    Inverse of polar_to_cartesian.  
+    Returns (v, r) such that:
+      long  = r*cos(v)*cos(base_angle)
+      width = side_arm - r*cos(v)*sin(base_angle)
+      height= base_height + r*sin(v)
+    """
+    # 1) horizontal projection
+    dx = np.sqrt(long**2 + (side_arm - width)**2)
+    # 2) radial distance
+    dz = height - base_height
+    r = np.hypot(dx, dz)
+    # 3) elevation angle
+    v = np.arctan2(dz, dx)
+
+    return v, r
+
+def linspace_step_size(start: float, end: float, step: float) -> np.ndarray:
+    num_steps = round((end - start) / step) + 1  # Ensure exact number of points
+    return np.linspace(start, end, num_steps).tolist()
+
+def store_recorder_data_in_csv(recorder: DataRecorder, run_index: int, move_axis: int, filename: str = None) -> None:
+    # Motion parameters
+    motion_headers = [
+        'index',
+        'servo_period',
+        'servo_timestamp',
+        *[f'j{i}_pos_cmd' for i in range(len(recorder.inputJointPositions[0]))],
+        *[f'j{i}_pos_enc' for i in range(len(recorder.inputJointPositions[0]))],
+        *[f'j{i}_current' for i in range(len(recorder.inputJointPositions[0]))],
+        'imu_timestamp',
+        'acc_x','acc_y','acc_z',
+        'gyro_x','gyro_y','gyro_z',
+        'quat_timestamp',
+        'w','x','y','z'
+    ]
+
+    motion_data_rows = []
+    for i in range(len(recorder.servoTime)):
+        row = [
+            i,
+            recorder.servoTime[i] - recorder.servoTime[i-1] if i > 0 else 0.0,
+            recorder.servoTime[i],
+            *recorder.inputJointPositions[i],
+            *recorder.outputJointPositions[i],
+            *recorder.outputCurrents[i],
+            recorder.imuTime[i],
+            *recorder.outputTcpAccelerations[i],
+            recorder.quaternionTime[i],
+            *recorder.quaternion[i]
+        ]
+        
+        motion_data_rows.append(row)
+
+    # Create filename
+    now = datetime.datetime.now()
+    if filename is None:
+        motion_filename = f"data/{now.year}-{now.month}-{now.day}/robotData_motion_pose{run_index}_axis{move_axis}.csv"
+    else:
+        motion_filename = f"data/{now.year}-{now.month}-{now.day}/motion_{filename}"
+
+    # Create directories if they don't exist
+    motion_directory = os.path.dirname(motion_filename)
+    os.makedirs(motion_directory, exist_ok=True) 
+
+    # Store motion data in csv
+    with open(file=motion_filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(motion_headers)     # header row
+        writer.writerows(motion_data_rows)    # all data rows
+    
+    # Static parameters
+    static_headers = [
+        'input_v',
+        'input_r',
+        *[f'j{i}_inertia' for i in range(len(recorder.outputMassDiagonals))],
+        *[f'end_index_{i}' for i in range(len(recorder.endIndices))] # (unknown size) -- must be the last elements 
+    ]
+
+    static_data_rows = []
+    static_data_rows.append(
+        [
+            *recorder.inputV,
+            *recorder.inputR,
+            *recorder.outputMassDiagonals,
+            *recorder.endIndices
+
+        ]
+    )
+
+    # Create filename
+    static_filename = f"data/{now.year}-{now.month}-{now.day}/robotData_static_pose{run_index}_axis{move_axis}.csv"
+    if filename is None:
+        static_filename = f"data/{now.year}-{now.month}-{now.day}/robotData_static_pose{run_index}_axis{move_axis}.csv"
+    else:
+        static_filename = f"data/{now.year}-{now.month}-{now.day}/static_{filename}"
+    
+    # Create directories if they don't exist
+    static_directory = os.path.dirname(static_filename)
+    os.makedirs(static_directory, exist_ok=True) 
+
+    # Store static data in csv
+    with open(file=static_filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(static_headers)     # header row
+        writer.writerows(static_data_rows)    # all data rows
+
+def normalized_interpolation(time_list: List[np.ndarray], to_interp_lists: List[list]) -> Tuple[List, np.ndarray]:
+        # Determine the maximum number of trajectory points across joints
+        max_traj_pts = max(len(tj) for tj in time_list)
+
+        # Compute normalized time for each joint trajectory (range [0,1])
+        normalized_time_trajectories = []
+        for tj in time_list:
+            if tj[-1] > 0:
+                norm_tj = tj / tj[-1]  # normalize each time vector by its final time
+                normalized_time_trajectories.append(norm_tj)
+            else:
+                normalized_time_trajectories.append(tj)
+
+        # Create a common normalized time vector from 0 to 1 with max_traj_pts samples
+        common_norm_time = np.linspace(0, 1, max_traj_pts)
+
+        # Optionally, define a common overall duration (e.g., the maximum final time)
+        max_duration = max(tj[-1] for tj in time_list)
+        path_time = common_norm_time * max_duration
+
+        # Interpolate each joint's trajectory using the normalized time vector
+        for _list in to_interp_lists: # interp_lists = [joint_trajetories, joint_velocities, joint_accelerations]
+            for i in range(len(_list)): # _list = joint_trajectories list
+                arr = np.squeeze(_list[i])
+                _list[i] = np.interp(common_norm_time, normalized_time_trajectories[i], arr)
+
+        # Return altered lists
+        return to_interp_lists, path_time
+
+def transpose_list(original_list: List) -> List:
+    return list(map(list, zip(*original_list)))

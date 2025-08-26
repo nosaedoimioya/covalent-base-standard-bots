@@ -1,11 +1,8 @@
 anytree==2.13.0
-control==0.10.2
-keras==3.11.2
 matplotlib==3.10.5
 numpy==2.3.2
 pandas==2.3.1
 scipy==1.16.1
-sympy==1.14.0
-tensorflow==2.20.0
+sympy==1.13.1
 pybind11==2.13.1
-pytest==8.2.2
+torch==2.5.1

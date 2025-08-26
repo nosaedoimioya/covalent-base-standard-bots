@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(covalent_base_identification LANGUAGES CXX)
+project(covalent_base LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,4 +20,4 @@ if(NOT iir_FOUND)
 endif()
 
 add_subdirectory(src/cpp/identification)
-add_subdirectory(src/cpp/control)
+add_subdirectory(src/control)

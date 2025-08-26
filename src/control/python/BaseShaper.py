@@ -61,7 +61,7 @@ class BaseShaper:
 
         Parameters:
             x: trajectory to shape
-            varying_params: list of arrays of varying dynamics (wn_i, zeta_i) at each time step i
+            varying_params: list of arrays of varying dynamics [[wn1_i, zeta1_i], [wn2_i, zeta2_i]] at each time step i
 
         Returns:
             x_shaped: shaped trajectory

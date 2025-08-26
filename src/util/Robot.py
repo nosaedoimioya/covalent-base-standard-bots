@@ -10,11 +10,7 @@ from util.Trajectory import Trajectory
 class Robot(ABC):
     def __init__(self, name: str):
         self.name = name
-        self.robot_states = {}
-        self.log = {}
-        self.mode = {}
         self.recorder = DataRecorder()
-        self.robot_info = {}
         # Number of joints in the robot
         # default [j0, j1, j2, j3, j4, j5]
         self.num_joints = 6 

@@ -12,9 +12,6 @@ class TestRobot(Robot):
     def __init__(self, robot_ip: str, local_ip: str):
         super().__init__("Test Robot")
         # Initialize Robot specific attributes
-        self.robot_states = {}
-        self.log = {}
-        self.mode = {}
         self.recorder = DataRecorder()
         self.robot_info = {}
         self.num_joints = 6
