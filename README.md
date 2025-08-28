@@ -7,3 +7,8 @@ The C++ identification modules require the following libraries to be available w
 
 - Iir1 (digital filter library) version 1.9.3 or newer
 - cnpy (NumPy file support) version 0.2 or newer
+
+## Documentation
+
+For a complete guide to running dynamic calibration on Standard Bots robots, see
+[docs/StandardBotsCalibrationGuide.md](docs/StandardBotsCalibrationGuide.md).
