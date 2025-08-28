@@ -42,8 +42,10 @@ class Dynamics():
         self.sym_p : list[sym.Matrix] = []                  # Link position vectors (static)
         self.sym_p_com : list[sym.Matrix] = []              # Center of mass position vectors (dynamic)
         self.sym_R : list[sym.Matrix] = []                  # Link rotation matrices (dynamic)
+        self.sym_R_lambdified : list[sym.Matrix] = []         # Link rotation matrices (dynamic) lambdified
         self.sym_R_total = sym.eye(3)                       # Total rotation matrix (dynamic)
         self.sym_T : list[sym.Matrix] = []                  # Link transformation matrices (dynamic)
+        self.sym_T_lambdified : list[sym.Matrix] = []         # Link transformation matrices (dynamic) lambdified
         self.sym_T_total = sym.eye(4)                       # Total transformation matrix (dynamic)
         self.sym_J = sym.zeros(6,self.num_joints)           # Jacobian matrix (dynamic)
         self.sym_Jw = sym.zeros(3,self.num_joints)          # Angular Jacobian (dynamic)
@@ -150,7 +152,7 @@ class Dynamics():
             raise Exception("Warning: The robot parameters have not been initialized yet. \
                        Run Dynamics.initialize_model(joint_angles [rad]) to initialize model.")
         
-        return self.sym_T[i](joint_angle)
+        return self.sym_T_lambdified[i](joint_angle)
     
     def get_rotation_matrix(self, joint_angles: List) -> np.ndarray:
         '''
@@ -173,7 +175,7 @@ class Dynamics():
             raise Exception("Warning: The robot parameters have not been initialized yet. \
                             Run Dynamics.initialize_model(joint_angles [rad]) to initialize model.")
         
-        return self.sym_R[i](joint_angle)
+        return self.sym_R_lambdified[i](joint_angle)
     
     def get_position_vectors(self, joint_angles: List) -> List[np.ndarray]:
         '''
@@ -255,10 +257,10 @@ class Dynamics():
         self.sym_R_total = Rt
 
     def __sym_R_compute(self):
-        sym_R_matrices = [self.__sym_rotation_matrix(i, self.sym_q[i]) for i in range(self.num_joints)]
+        self.sym_R = [self.__sym_rotation_matrix(i, self.sym_q[i]) for i in range(self.num_joints)]
 
-        self.sym_R = [
-            sym.lambdify(self.sym_q[j], sym_R_matrices[j], modules='numpy')
+        self.sym_R_lambdified = [
+            sym.lambdify(self.sym_q[j], self.sym_R[j], modules='numpy')
             for j in range(self.num_joints)
         ]
     
@@ -272,11 +274,12 @@ class Dynamics():
             [sym.sin(q)*sym.sin(alpha), sym.cos(q)*sym.sin(alpha), sym.cos(alpha)]
         ])
     
-    def _sym_p_com_compute(self):
+    def _sym_p_com_compute(self) -> list[sym.Matrix]:
         # reset before append
         self.sym_p_com = []
         # Update center of mass position vectors
         current_com = self.sym_p[0] # Start with the initial base position
+        self.__sym_R_compute()
         current_rotation = self.sym_R[0] # Start with the first rotation matrix
 
         for i in range(self.num_joints):
@@ -286,6 +289,8 @@ class Dynamics():
                 current_rotation = current_rotation * self.sym_R[i]
             self.sym_p_com.append(current_com + (current_rotation * pc))
 
+        return self.sym_p_com
+
     def _sym_T_total_compute(self):
         self.__sym_T_compute()
         Tt = sym.eye(4)
@@ -294,10 +299,10 @@ class Dynamics():
         self.sym_T_total = Tt
 
     def __sym_T_compute(self):
-        sym_T_matrices = [self.__sym_transformation_matrix(i,self.sym_q[i]) for i in range(self.num_joints)]
+        self.sym_T = [self.__sym_transformation_matrix(i,self.sym_q[i]) for i in range(self.num_joints)]
 
-        self.sym_T = [
-            sym.lambdify(self.sym_q[j], sym_T_matrices[j], modules='numpy')
+        self.sym_T_lambdified = [
+            sym.lambdify(self.sym_q[j], self.sym_T[j], modules='numpy')
             for j in range(self.num_joints)
         ]
     
@@ -341,6 +346,7 @@ class Dynamics():
             self.sym_Jv[:,i] = (self.sym_p_com[self.num_joints-1].jacobian(q))[:,i]
         
         # Angular part
+        self.__sym_R_compute()
         R_current = self.sym_R[0] # Start with the base rotation matrix
         Jo : sym.Matrix = self.sym_R[0][:,2] # Start the Jacobian with the first column
 
@@ -359,7 +365,7 @@ class Dynamics():
         self.sym_M = sym.zeros(self.num_joints, self.num_joints)
 
         # Compiled rotation matrix
-        R_o = sym.eye(3)
+        R_o = sym.eye(3)    
 
         Jv_stack = sym.zeros(self.sym_Jv.shape[0], self.sym_Jv.shape[1])
         Jw_stack = sym.zeros(self.sym_Jw.shape[0], self.sym_Jw.shape[1])

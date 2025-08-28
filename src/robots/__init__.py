@@ -6,6 +6,6 @@ except Exception as exc:
     raise ImportError("TestRobot extension not built") from exc
 
 try:
-    import robots.Standard
+    import src.robots.Standard
 except Exception as exc:
     raise ImportError("Standard extension not built") from exc

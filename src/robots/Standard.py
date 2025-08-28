@@ -3,8 +3,7 @@
 # Description: Specific code to run system identification on the R01 Robot.
 # Version: 0.1
 
-import os, time
-import torch
+import os
 import numpy as np
 from standardbots import StandardBotsRobot, models
 from typing import List, Tuple, Dict, Deque
@@ -13,7 +12,7 @@ from util.Utility import DataRecorder, get_polar_coordinates, polar_to_cartesian
 from util.Robot import Robot, TrajParams, SystemIdParams, Trajectory
 from util.RobotDynamics import Dynamics
 
-from build.src.cpp.identification.MapFitter import ModelLoader
+from src.identification.lib.MapFitter import ModelLoader
 
 from control.python.BaseShaper import BaseShaper
 
@@ -40,7 +39,7 @@ HOME_JOINTS = [0.0, np.pi/2, 0.0, 0.0, 0.0, 0.0]
 HTTP_HEADER = 'http://'
 
 class StandardRobot(Robot):
-    def __init__(self, robot_id: str, api_token: str):
+    def __init__(self, robot_id: str = "sim", api_token: str = "sim"):
         super().__init__("Standard Robot")  # Example: Standard robot
         # Initialize Robot attributes
         self.models = models
@@ -90,25 +89,19 @@ class StandardRobot(Robot):
 
                 # Set ID for ROS robot
                 self.id = BOT_ID
-            else:
-                # Instantiate robot interface
-                self.robot = StandardBotsRobot(
-                    url=HTTP_HEADER + robot_id,
-                    token=api_token,
-                    robot_kind=StandardBotsRobot.RobotKind.Simulated,
-                )
-                self.state = None
-                print("Enabling simulated robot...")
-                    
 
-            self.position = self.robot.movement.position.get_arm_position().ok()
+                self.num_joints = len(self.__get_joint_positions())
+                self.pose_length = len(self.__get_tcp_pose())
+            else:
+                self.id = BOT_ID
+                self.num_joints = 6
+                self.pose_length = 7
 
         except Exception as e:
             # Print exception error message
             raise RuntimeError(f"Error getting {robot_id} operational: {str(e)}")
         
-        self.num_joints = len(self.__get_joint_positions())
-        self.pose_length = len(self.__get_tcp_pose())
+        
 
     @property
     def in_sim_mode(self) -> bool:
@@ -386,129 +379,7 @@ class StandardRobot(Robot):
         self.recorder.quaternionTime.append(entry["imu_time"])
         self.recorder.quaternion.append(entry["orientation"].tolist())
 
-    def execute_covalent_base_ptp_test(self, configs: List[List[float]], model_filename: str, 
-                                        dwell: float = 1.0, num_axes: int = 3, Ts: float = 1/ROBOT_MAX_FREQ) -> None:
-        '''
-        Create and execute point-to-point tests for uncompensated and compensated trajectories.
-        Parameters:
-            - configs: List of joint configurations to move between. Each configuration is a list of joint angles.
-            - model_filename: Filename of the trained NN model to use for compensation.
-            - dwell: Time to wait at each configuration before starting the motion (in seconds).
-            - num_axes: Number of axes to compensate (default is 3).
-
-        '''
-        # For each point in configs, run a PTP motion - uncompensated & compensated
-        for i, (start, end) in enumerate(configs):
-
-            # Generate the trajectories from point to point
-            position, velocity, acceleration, time_list = self.__plan_joints_path(
-                                                                    start_angles=start,
-                                                                    goal_angles=end, 
-                                                                    Ts=Ts,
-                                                                    dwell=dwell)
-            
-            # Move to the start point
-            self.__move_to_joint(target_joint=tuple(start))
-
-            # wait for dynamics to settle
-            time.sleep(dwell)
-
-            # Run the uncompensated path and store data
-            print(f"Running uncompensated path for config {i}")
-            data_log = self.__ros_publish_joint_positions(
-                time_data=time_list,
-                position_stream=position,
-                velocity_stream=velocity,
-                acceleration_stream=acceleration,
-                Ts=Ts
-            )
-
-            # Reset recorder for storing data
-            self.__reset_recorder()
-            
-            # Get v, r, and inertias at the end point
-            v, r, inertias = self.__compute_nn_inputs()
-
-            # print(f"v: {v} rad, r: {r} m")
-
-            # Data post processing
-            while data_log: # {'cmd_time','input_positions','output_positions','velocities','efforts','imu_time','linear_acceleration','angular_velocity','orientation'}
-                log_entry = data_log.popleft()
-                self.process_motion_data(entry=log_entry)
-
-            # Record static data
-            # ===============================================
-            # Mass data
-            self.recorder.outputMassDiagonals = inertias # list
-
-            # End indices data
-            self.recorder.endIndices = [len(position)]
-
-            # R and V
-            self.recorder.inputV.append(v)
-            self.recorder.inputR.append(r)
-
-            # TO-DO (nosed): split up recording function for ptp motions vs sine sweep
-            # Record/Store data
-            filename = f"ptp_config{i}_uncompensated"
-            store_recorder_data_in_csv(self.recorder, run_index=0, move_axis=0, filename=filename)
-
-            
-            frf_params = self.__compute_frf_params(joint_positions=np.array(position), model_filename=model_filename, 
-                                                   num_axes=num_axes)
-
-            # Compute shaped trajectory to send to robot
-            shaped_position, shaped_velocity, \
-                shaped_acceleration, shaped_time_list = self.__shape_joints_path(frf_params=frf_params,
-                                                                            position_unshaped=np.array(position),
-                                                                            velocity_unshaped=np.array(velocity),
-                                                                            acceleration_unshaped=np.array(acceleration),
-                                                                            time_unshaped=np.array(time_list),
-                                                                            num_axes=num_axes, Ts=Ts)
-            
-            # Prep to run the compensated trajectory
-            # ============================================
-            # Move back to the start point
-            self.__move_to_joint(target_joint=tuple(start))
-
-            # wait for dynamics to settle
-            time.sleep(dwell)
-
-            # Run the compensated path and store data
-            data_log = self.__ros_publish_joint_positions(
-                time_data=shaped_time_list,
-                position_stream=shaped_position,
-                velocity_stream=shaped_velocity,
-                acceleration_stream=shaped_acceleration,
-                Ts=self.Ts
-            )
-
-            # Reset recorder for storing data
-            self.__reset_recorder()
-
-            # Data post processing
-            while data_log: # {'cmd_time','input_positions','output_positions','velocities','efforts','imu_time','linear_acceleration','angular_velocity','orientation'}
-                log_entry = data_log.popleft()
-                self.process_motion_data(entry=log_entry)
-
-            # Static data
-            # ===============================================
-            # Mass data
-            self.recorder.outputMassDiagonals = inertias # list
-
-            # End indices data
-            self.recorder.endIndices = [len(position)]
-
-            # R and V
-            self.recorder.inputV.append(v)
-            self.recorder.inputR.append(r)
-
-            # Record/store shaped data
-            filename = f"ptp_config{i}_compensated"
-            store_recorder_data_in_csv(self.recorder, run_index=0, move_axis=0, filename=filename)
-
-        # Return home
-        self.move_home(joint_move=True)
+    
     
     def __plan_joints_path(self, start_angles: List, goal_angles: List,
                            t_params: TrajParams = None,
@@ -624,79 +495,6 @@ class StandardRobot(Robot):
         self.recorder.endIndices = []
         self.recorder.inputV = []
         self.recorder.inputR = []
-
-    def __compute_frf_params(self, joint_positions: List[List[float]], model_filename: str, 
-                             num_axes: int = 3, prob_thresh: float = 0.5) -> List[float]:
-        # Create a [len(joint_positions)] array of wn, zeta for each axis
-        frf_params = [] # list of np.arrays
-
-        # Get the neural network model
-        nn_models = ModelLoader.load(directory=model_filename, axes=num_axes, input_features=3, hidden=[64, 64])
-
-        # For each configuration, compute the wn, zeta
-        for i, joint_position in enumerate(joint_positions):
-            # Use transformation matrix to convert joint positions to cartesian positions
-            cartesian_position = self.model.get_forward_kinematics(joint_angles=joint_position)
-
-            # Get the furthest axis from the base frame
-            max_reach = max([abs(cartesian_position[0]),abs(cartesian_position[1]),abs(cartesian_position[2])])
-            reach_axis = np.where(np.abs(cartesian_position) == max_reach)[0][0]
-
-            # height above base frame of the base joint
-            height = cartesian_position[2] # always the z-axis
-
-            # Get the depth in the axis location orthogonal to the max_reach of the robot
-            depth_axis = np.where(np.logical_and(np.not_equal(np.abs(cartesian_position), height), np.not_equal(np.abs(cartesian_position), max_reach)))[0][0]
-
-            # Compute v and r
-            v, r = cartesian_to_polar(long=cartesian_position[reach_axis], 
-                                      width=cartesian_position[depth_axis], 
-                                      height=height,
-                                      side_arm=self.side_length, 
-                                      base_height=self.initial_height)
-
-            # Use current joint position to compute inertias
-            mass_matrix = self.model.get_mass_matrix(joint_angles=joint_position) # numpy array
-
-            # Compute the inertia matrix
-            mass_diagonals = np.zeros((self.num_joints,))
-            for joint_num in range(self.num_joints):
-                mass_diagonals[joint_num] = mass_matrix[joint_num][joint_num]
-
-            # Get the wn and zeta from the neural network model
-            frf_params_axis = []
-            for k in range(num_axes):
-                # -------- features (match what C++ trained on) --------------------------
-                X_raw = np.array([[                     # shape [1, 3]
-                    v * 180.0 / np.pi,                  # V in degrees
-                    r * 1000.0,                         # R in mm
-                    mass_diagonals[k],                        # kg·m²
-                ]], dtype=np.float32)
-
-                X = torch.from_numpy(X_raw)
-
-                # -------- inference ------------------------------------------------------
-                with torch.no_grad():
-                    p_cls, p_reg = nn_models.infer(k, X)   # (N×1, N×4) here N=1
-
-                prob_second = float(p_cls.squeeze().item())
-                wn1, z1_log, wn2, z2_log = p_reg.squeeze(0).tolist()
-                z1, z2 = np.exp(z1_log), np.exp(z2_log)
-                wn1_rad, wn2_rad = wn1 * 2*np.pi, wn2 * 2*np.pi
-
-                # -------- decide shaper order -------------------------------------------
-                two_mode = bool(prob_second > prob_thresh)
-                if two_mode:
-                    # Append both modes to the frf_params
-                    frf_params_axis.append([wn1_rad, z1])
-                    frf_params_axis.append([wn2_rad, z2])
-                else:
-                    # Append only the first mode to the frf_params
-                    frf_params_axis.append([wn1_rad, z1])
-                
-            frf_params.append(np.array(frf_params_axis))
-
-        return frf_params
 
     def __shape_joints_path(self,
                             frf_params: List[np.ndarray],
